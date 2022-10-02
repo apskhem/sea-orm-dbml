@@ -1,0 +1,16 @@
+[package]
+name = "sea-orm-dbml"
+authors = ["Apisit Ritreungroj <cyber1.record@gmail.com>"]
+categories = ["database"]
+license = "MIT OR Apache-2.0"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "sea_orm_dbml"
+path = "src/lib.rs"
+
+[dependencies]
+pest = "2.4"
+pest_derive = "2.4"
+sea-orm = { version = "0.9" }

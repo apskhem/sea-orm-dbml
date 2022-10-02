@@ -1,0 +1,38 @@
+Project project_name {
+  database_type: 'PostgreSQL'
+  Note: 'Description of the project'
+}
+
+Table users {
+  id integer
+  username varchar
+  role varchar
+  created_at timestamp
+}
+
+Table posts {
+  id integer [primary key]
+  title varchar
+  body text [note: 'Content of the post']
+  user_id integer
+  status post_status
+  created_at timestamp
+}
+
+Table orders {
+    status varchar [
+    note: '
+    💸 1 = processing, 
+    ✔️ 2 = shipped, 
+    ❌ 3 = cancelled,
+    😔 4 = refunded
+    ']
+}
+
+enum post_status {
+  draft
+  published
+  private [note: 'visible via URL only']
+}
+
+Ref: posts.user_id > users.id // many-to-one
