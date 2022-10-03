@@ -1,8 +1,8 @@
 #[derive(Debug, PartialEq, Eq, Clone, Default)]
 pub struct RefBlock {
   pub rel: Relation,
-  pub from: Option<RefId>,
-  pub to: RefId
+  pub lhs: Option<RefId>,
+  pub rhs: RefId
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Default)]
@@ -14,10 +14,9 @@ pub enum Relation {
   Many2Many
 }
 
-
 #[derive(Debug, PartialEq, Eq, Clone, Default)]
 pub struct RefId {
   pub schema: Option<String>,
   pub table: String,
-  pub field: String,
+  pub compositions: Vec<String>,
 }

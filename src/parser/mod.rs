@@ -4,7 +4,7 @@ use pest::iterators::Pair;
 
 use crate::ast::enums::{EnumBlock, EnumValue};
 use crate::ast::project::ProjectBlock;
-use crate::ast::refs::RefBlock;
+use crate::ast::refs::{RefBlock, RefId, Relation};
 use crate::ast::table::{TableBlock, TableField, ColumnType, Value, ColumnSettings, TableId};
 use crate::ast::table_group::{TableGroupBlock, TableGroupId};
 use crate::ast::schema::SchemaBlock;
@@ -217,7 +217,7 @@ fn parse_col_settings(pair: Pair<Rule>) -> ColumnSettings {
                   out.note = parse_note_inline(p2)
                 },
                 Rule::ref_inline => {
-                  todo!("add ref inline")
+                  out.refs.push(parse_ref_stmt_inline(p2))
                 },
                 _ => unreachable!("'{:?}' not supposed to get there (col_attribute)!", p2.as_rule()),
               }
@@ -301,20 +301,85 @@ fn parse_enum_value(pair: Pair<Rule>) -> EnumValue {
 }
 
 fn parse_ref_decl(pair: Pair<Rule>) -> RefBlock {
+  for p1 in pair.into_inner() {
+    match p1.as_rule() {
+      Rule::ref_block | Rule::ref_short => {
+        for p2 in p1.into_inner() {
+          match p2.as_rule() {
+            Rule::ref_stmt => {
+              return parse_ref_stmt_inline(p2)
+            },
+            _ => unreachable!("'{:?}' not supposed to get there (ref_block | ref_short)!", p2.as_rule()),
+          }
+        }
+      },
+      _ => unreachable!("'{:?}' not supposed to get there (ref_decl)!", p1.as_rule()),
+    }
+  }
+
+  unreachable!("something went wrong parsing ref_decl!")
+}
+
+fn parse_ref_stmt_inline(pair: Pair<Rule>) -> RefBlock {
   let mut out = RefBlock::default();
   
-  for p in pair.into_inner() {
-    
+  for p1 in pair.into_inner() {
+    match p1.as_rule() {
+      Rule::relation => {
+        out.rel = match p1.as_str() {
+          "<" => Relation::One2Many,
+          ">" => Relation::Many2One,
+          "-" => Relation::One2One,
+          "<>" => Relation::Many2Many,
+          _ => unreachable!("'{:?}' is not a correct relation symbol!", p1.as_rule()),
+        }
+      },
+      Rule::ref_ident => {
+        let value = parse_ref_ident(p1);
+
+        if out.rel == Relation::Undef {
+          out.lhs = Some(value);
+        } else {
+          out.rhs = value;
+        }
+      },
+      _ => unreachable!("'{:?}' not supposed to get there (ref_stmt | ref_inline)!", p1.as_rule()),
+    }
   }
 
   out
 }
 
-fn parse_ref_inline(pair: Pair<Rule>) -> RefBlock {
-  let mut out = RefBlock::default();
+fn parse_ref_ident(pair: Pair<Rule>) -> RefId {
+  let mut out = RefId::default();
+  let mut tmp_tokens = vec![];
   
-  for p in pair.into_inner() {
-    
+  for p1 in pair.into_inner() {
+    match p1.as_rule() {
+      Rule::ident => {
+        tmp_tokens.push(p1.as_str().to_string())
+      },
+      Rule::ref_composition => {
+        for p2 in p1.into_inner() {
+          match p2.as_rule() {
+            Rule::ident => {
+              out.compositions.push(p2.as_str().to_string())
+            },
+            _ => unreachable!("'{:?}' not supposed to get there (ref_composition)!", p2.as_rule()),
+          }
+        }
+      },
+      _ => unreachable!("'{:?}' not supposed to get there (ref_indent)!", p1.as_rule()),
+    }
+  }
+
+  if tmp_tokens.len() == 2 {
+    out.schema = Some(tmp_tokens.remove(0));
+    out.table = tmp_tokens.remove(0);
+  } else if tmp_tokens.len() == 1 {
+    out.table = tmp_tokens.remove(0);
+  } else {
+    unreachable!("unwell formatted ident!")
   }
 
   out
@@ -468,20 +533,20 @@ fn parse_value(pair: Pair<Rule>) -> Value {
 fn parse_decl_ident(pair: Pair<Rule>) -> (Option<String>, String) {
   let mut schema = None;
   let mut name = String::default();
-  let mut tokens = vec![];
+  let mut tmp_tokens = vec![];
   
   for p1 in pair.into_inner() {
     match p1.as_rule() {
-      Rule::ident => tokens.push(p1.as_str().to_string()),
+      Rule::ident => tmp_tokens.push(p1.as_str().to_string()),
       _ => unreachable!("'{:?}' not supposed to get there (decl_indent)!", p1.as_rule()),
     }
   }
 
-  if tokens.len() == 2 {
-    schema = Some(tokens.remove(0));
-    name = tokens.remove(0);
-  } else if tokens.len() == 1 {
-    name = tokens.remove(0);
+  if tmp_tokens.len() == 2 {
+    schema = Some(tmp_tokens.remove(0));
+    name = tmp_tokens.remove(0);
+  } else if tmp_tokens.len() == 1 {
+    name = tmp_tokens.remove(0);
   } else {
     unreachable!("unwell formatted ident!")
   }
