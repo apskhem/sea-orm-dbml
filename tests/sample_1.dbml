@@ -3,6 +3,12 @@ Project project_name {
   Note: 'Description of the project'
 }
 
+TableGroup order {
+  users 
+  posts 
+  orders
+}
+
 Table users {
   id integer
   username varchar

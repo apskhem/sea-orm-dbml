@@ -1,12 +1,13 @@
 #[derive(Debug, PartialEq, Eq, Clone, Default)]
 pub struct RefBlock {
-  pub rel: Option<Relation>,
+  pub rel: Relation,
   pub from: Option<RefId>,
   pub to: RefId
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Default)]
 pub enum Relation {
+  #[default] Undef,
   One2One,
   One2Many,
   Many2One,

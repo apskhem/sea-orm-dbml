@@ -24,7 +24,8 @@ string_value = { triple_quoted_string | single_quoted_string }
 integer = @{ ASCII_DIGIT+ }
 decimal = @{ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT* }
 number_value = { integer | decimal }
-value = { string_value | number_value }
+boolean_value = { "true" | "false" | "null" }
+value = { string_value | number_value | boolean_value }
 
 // top-level ident
 decl_ident = { ident ~ ("." ~ ident)? }
@@ -47,22 +48,22 @@ note_decl = { note_short | note_block }
 
 // enum block
 enum_attribute = { note_inline }
-enum_settings = { "[" ~ (col_attribute ~ ("," ~ col_attribute)*)? ~ "]" }
+enum_settings = { "[" ~ (enum_attribute ~ ("," ~ enum_attribute)*)? ~ "]" }
 enum_value = { ident ~ enum_settings? }
 enum_block = { "{" ~ enum_value* ~ "}" }
 enum_decl = { "enum " ~ decl_ident ~ enum_block }
 
 // table block
-col_default = { "default" ~ ":" ~ string_value }
-col_attribute = { "unique" | "primary key" | "pk" | "null" | "not null" | col_default | note_inline | ref_inline }
+col_default = { "default" ~ ":" ~ value }
+col_attribute = { "unique" | "primary key" | "pk" | "null" | "not null" | "increment" | col_default | note_inline | ref_inline }
 col_settings = { "[" ~ (col_attribute ~ ("," ~ col_attribute)*)? ~ "]" }
 col_type_arg = { "(" ~ (value ~ ("," ~ value)*)? ~ ")" }
 col_type_single = { (var ~ col_type_arg?) | ("\"" ~ (var ~ col_type_arg?) ~ "\"") }
 col_type_array = { "\"" ~ (var ~ col_type_arg?) ~ "[]" ~ "\"" }
 col_type = { col_type_single | col_type_array }
-table_alias = { "as " ~ ident }
 table_col = { ident ~ col_type ~ col_settings? }
 table_block = { "{" ~ (table_col | note_decl)* ~ "}" }
+table_alias = { "as " ~ ident }
 table_decl = { "Table " ~ decl_ident ~ table_alias? ~ table_block }
 
 // table group block

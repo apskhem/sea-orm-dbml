@@ -8,7 +8,7 @@ fn main() -> Result<(), String> {
 
   let ast_out = parser::parse(&contents);
 
-  println!("{:?}", ast_out);
+  ast_out.unwrap().print();
 
   Ok(())
 }

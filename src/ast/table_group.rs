@@ -1,6 +1,13 @@
 use super::*;
 
-#[derive(Debug, PartialEq, Eq, Clone, Default)]
+#[derive(Debug, PartialEq, Clone, Default)]
 pub struct TableGroupBlock {
-  pub table_ids: Vec<table::TableId>
+  pub name: String,
+  pub table_ids: Vec<TableGroupId>
+}
+
+#[derive(Debug, PartialEq, Clone, Default)]
+pub struct TableGroupId {
+  pub name_1: Option<String>,
+  pub name_2: String
 }

@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Debug, PartialEq, Eq, Clone, Default)]
+#[derive(Debug, PartialEq, Clone, Default)]
 pub struct SchemaBlock {
   /// Overall description of the project. This is optional. The file must contain one or zero 'Project' block.
   pub project: Option<project::ProjectBlock>,
@@ -33,5 +33,27 @@ impl SchemaBlock {
 
   pub fn get_block_count(&self) {
     unimplemented!();
+  }
+
+  pub fn print(&self) {
+    println!("Project:");
+
+    println!("{:?}\n----", self.project);
+
+    println!("Tables:");
+
+    self.tables.iter().for_each(|table| println!("{:?}\n----", table));
+
+    println!("TableGroups:");
+
+    self.table_groups.iter().for_each(|table| println!("{:?}\n----", table));
+
+    println!("Refs:");
+
+    self.refs.iter().for_each(|table| println!("{:?}\n----", table));
+
+    println!("Enums:");
+
+    self.enums.iter().for_each(|table| println!("{:?}\n----", table));
   }
 }
