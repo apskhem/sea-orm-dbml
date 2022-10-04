@@ -25,6 +25,12 @@ impl Codegen {
     self
   }
 
+  pub fn empty_line(mut self, line_count: usize) -> Self {
+    self.root_block = self.root_block.empty_line(line_count);
+
+    self
+  }
+
   pub fn block(mut self, block: Block) -> Self {
     self.root_block = self.root_block.block(block);
 
@@ -81,6 +87,14 @@ impl Block {
     self
   }
 
+  pub fn empty_line(mut self, line_count: usize) -> Self {
+    let line_string = "\n".repeat(line_count);
+
+    self.content = format!("{}{}", self.content, line_string);
+
+    self
+  }
+
   pub fn block(mut self, block: Block) -> Self {
     self.content = format!("{}{}\n", self.content, block.to_string());
 
@@ -91,7 +105,7 @@ impl Block {
 impl ToString for Block {
   fn to_string(&self) -> String {
     let out = if self.level == 0 {
-      format!("{}\n", self.content.clone())
+      format!("{}", self.content.clone())
     } else {
       let block_indent = if self.level == 1 { String::new() } else { "\t".repeat(self.level - 1) };
 
@@ -103,7 +117,7 @@ impl ToString for Block {
 
       let lower_block = format!("{}{}", block_indent, "}");
 
-      format!("{}\n{}{}\n", upper_block, self.content.clone(), lower_block)
+      format!("{}\n{}{}", upper_block, self.content.clone(), lower_block)
     };
     
     out

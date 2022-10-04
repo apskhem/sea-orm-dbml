@@ -1,4 +1,4 @@
-use sea_orm_dbml::*;
+use dbml_entity::*;
 
 fn main() {
   config("tests/dbml/sample_1.dbml", transpiler::Target::SeaORMPostgreSQL)
