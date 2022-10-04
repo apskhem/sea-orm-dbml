@@ -1,5 +1,5 @@
 [package]
-name = "sea-orm-dbml"
+name = "dbml-entity"
 authors = ["Apisit Ritreungroj <cyber1.record@gmail.com>"]
 categories = ["database"]
 license = "MIT OR Apache-2.0"

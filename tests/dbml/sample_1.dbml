@@ -10,14 +10,14 @@ TableGroup order {
 }
 
 Table users {
-  id integer
+  id integer [pk]
   username varchar
   role varchar
   created_at timestamp
 }
 
 Table posts {
-  id integer [primary key]
+  id integer [pk]
   title varchar
   body text [note: 'Content of the post']
   user_id integer [ref: > users.id]
@@ -26,6 +26,7 @@ Table posts {
 }
 
 Table orders {
+  id integer [pk]
   status varchar [
   note: '
   💸 1 = processing, 

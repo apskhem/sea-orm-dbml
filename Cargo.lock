@@ -218,6 +218,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "dbml-entity"
+version = "0.1.0"
+dependencies = [
+ "pest",
+ "pest_derive",
+ "sea-orm",
+]
+
+[[package]]
 name = "digest"
 version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -925,15 +934,6 @@ dependencies = [
  "tracing",
  "url",
  "uuid",
-]
-
-[[package]]
-name = "sea-orm-dbml"
-version = "0.1.0"
-dependencies = [
- "pest",
- "pest_derive",
- "sea-orm",
 ]
 
 [[package]]

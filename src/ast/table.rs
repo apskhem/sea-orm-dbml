@@ -81,6 +81,11 @@ impl ColumnType {
       _ => unreachable!("'{:?}' type is not supported!", value),
     }
   }
+
+  pub fn to_rust_type(&self) -> String {
+    // TODO:
+    String::from("u32")
+  }
 }
 
 #[derive(Debug, PartialEq, Clone, Default)]
