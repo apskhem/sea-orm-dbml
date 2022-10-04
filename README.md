@@ -13,11 +13,12 @@ Read more: [Official docs](https://www.dbml.org/home/)
 The project aims to use this language as the standard language for declaring schema without digging deep into ORM's entity configuration.
 
 Benefits:
-    - All the benefits of DBML itself.
-    - Reduces learning curve of the used ORM in the project.
-    - Portability.
-    - Productivity.
-    - More focused.
+
+- All the benefits of DBML itself.
+- Reduces learning curve of the used ORM in the project.
+- Portability.
+- Productivity.
+- More focused.
 
 ## The taste
 
