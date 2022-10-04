@@ -77,8 +77,8 @@ fn transpile_sea_orm_postgresql(ast: schema::SematicSchemaBlock) -> Result<Strin
     .line("");
 
   let codegen = ast.tables.into_iter().fold(codegen, |acc, table| {
-    let mut table_block = Block::new(2, Some("pub struct Model"));
-    let mut rel_block = Block::new(2, Some("pub enum Relation"));
+    let table_block = Block::new(2, Some("pub struct Model"));
+    let rel_block = Block::new(2, Some("pub enum Relation"));
 
     let table::TableBlock {
       ident: table::TableIdent {
@@ -91,7 +91,7 @@ fn transpile_sea_orm_postgresql(ast: schema::SematicSchemaBlock) -> Result<Strin
       ..
     } = table;
 
-    fields.into_iter().for_each(|field| {
+    let table_block = fields.into_iter().fold(table_block,|mut acc, field| {
       let mut out_fields = vec![];
 
       if field.col_settings.is_pk {
@@ -101,22 +101,22 @@ fn transpile_sea_orm_postgresql(ast: schema::SematicSchemaBlock) -> Result<Strin
       }
 
       if !out_fields.is_empty() {
-        table_block.line(format!("#[sea_orm({})]", out_fields.join(", ")));
+        acc = acc.line(format!("#[sea_orm({})]", out_fields.join(", ")));
       }
       
-      table_block.line(format!("pub {}: {},", field.col_name, field.col_type.to_rust_type()));
+      acc
+        .line(format!("pub {}: {},", field.col_name, field.col_type.to_rust_type()))
     });
 
-    let mut mod_block = Block::new(1, Some(format!("pub mod {}", name)));
-
-    mod_block.line("use sea_orm::entity::prelude::*;");
-    mod_block.line("");
-    mod_block.line(format!("#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]"));
-    mod_block.line(format!("#[sea_orm(table_name = \"{}\")]", name));
-    mod_block.block(table_block);
-    mod_block.line("#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]");
-    mod_block.block(rel_block);
-    mod_block.line("impl ActiveModelBehavior for ActiveModel {}");
+    let mod_block = Block::new(1, Some(format!("pub mod {}", name)))
+      .line("use sea_orm::entity::prelude::*;")
+      .line("")
+      .line(format!("#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]"))
+      .line(format!("#[sea_orm(table_name = \"{}\")]", name))
+      .block(table_block)
+      .line("#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]")
+      .block(rel_block)
+      .line("impl ActiveModelBehavior for ActiveModel {}");
 
     acc.block(mod_block)
   });

@@ -20,13 +20,13 @@ impl Codegen {
   }
 
   pub fn line(mut self, line_content: impl ToString) -> Self {
-    self.root_block.line(line_content);
+    self.root_block = self.root_block.line(line_content);
 
     self
   }
 
   pub fn block(mut self, block: Block) -> Self {
-    self.root_block.block(block);
+    self.root_block = self.root_block.block(block);
 
     self
   }
@@ -71,7 +71,7 @@ impl Block {
     }
   }
 
-  pub fn line(&mut self, line_content: impl ToString) -> &Self {
+  pub fn line(mut self, line_content: impl ToString) -> Self {
     let indent = "\t".repeat(self.level);
 
     let new_content = format!("{}{}", indent, line_content.to_string());
@@ -81,7 +81,7 @@ impl Block {
     self
   }
 
-  pub fn block(&mut self, block: Block) -> &Self {
+  pub fn block(mut self, block: Block) -> Self {
     self.content = format!("{}{}\n", self.content, block.to_string());
 
     self
