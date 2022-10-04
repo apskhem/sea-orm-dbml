@@ -2,5 +2,5 @@
 pub struct ProjectBlock {
   pub name: String,
   pub database_type: String,
-  pub note: String
+  pub note: Option<String>
 }

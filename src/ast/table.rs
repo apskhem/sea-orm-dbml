@@ -3,8 +3,8 @@ use super::*;
 #[derive(Debug, PartialEq, Clone, Default)]
 pub struct TableBlock {
   pub fields: Vec<TableField>,
-  pub id: TableId,
-  pub note: String,
+  pub ident: TableIdent,
+  pub note: Option<String>,
   pub indexes: Option<indexes::IndexesBlock>
 }
 
@@ -83,13 +83,6 @@ impl ColumnType {
   }
 }
 
-/* 
-"<" = Token::Relation(Relation::One2Many),
-    ">" = Token::Relation(Relation::Many2One),
-    "-" = Token::Relation(Relation::One2One),
-    "<>" = Token::Relation(Relation::Many2Many),
-*/
-
 #[derive(Debug, PartialEq, Clone, Default)]
 pub struct ColumnSettings {
   pub is_pk: bool,
@@ -97,13 +90,13 @@ pub struct ColumnSettings {
   pub is_nullable: bool,
   pub is_incremental: bool,
   pub is_array: bool,
-  pub note: String,
+  pub note: Option<String>,
   pub default: Option<Value>,
   pub refs: Vec<refs::RefBlock>
 }
 
 #[derive(Debug, PartialEq, Clone, Default)]
-pub struct TableId {
+pub struct TableIdent {
   pub name: String,
   pub schema: Option<String>,
   pub alias: Option<String>

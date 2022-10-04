@@ -35,6 +35,10 @@ impl SchemaBlock {
     unimplemented!();
   }
 
+  pub fn transform_sematic(self) -> Self {
+    self
+  }
+
   pub fn print(&self) {
     println!("Project:");
 

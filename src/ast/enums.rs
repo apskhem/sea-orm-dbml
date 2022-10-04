@@ -1,17 +1,17 @@
 #[derive(Debug, PartialEq, Eq, Clone, Default)]
 pub struct EnumBlock {
-  pub id: EnumId,
+  pub ident: EnumIdent,
   pub values: Vec<EnumValue>
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Default)]
 pub struct EnumValue {
   pub value: String,
-  pub note: String,
+  pub note: Option<String>,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Default)]
-pub struct EnumId {
+pub struct EnumIdent {
   pub name: String, 
   pub schema: Option<String>
 }

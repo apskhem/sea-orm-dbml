@@ -2,12 +2,13 @@ use pest::Parser;
 use pest::error::Error;
 use pest::iterators::Pair;
 
-use crate::ast::enums::{EnumBlock, EnumValue};
-use crate::ast::project::ProjectBlock;
-use crate::ast::refs::{RefBlock, RefId, Relation};
-use crate::ast::table::{TableBlock, TableField, ColumnType, Value, ColumnSettings, TableId};
-use crate::ast::table_group::{TableGroupBlock, TableGroupId};
-use crate::ast::schema::SchemaBlock;
+use crate::ast::enums::*;
+use crate::ast::indexes::*;
+use crate::ast::project::*;
+use crate::ast::refs::*;
+use crate::ast::table::*;
+use crate::ast::table_group::*;
+use crate::ast::schema::*;
 
 #[derive(Parser)]
 #[grammar = "src/dbml.pest"]
@@ -63,7 +64,7 @@ fn parse_project_decl(pair: Pair<Rule>) -> ProjectBlock {
                 _ => unreachable!("'{:?}' is an invalid key in project_block!", key),
               }
             },
-            Rule::note_decl => out.note = parse_note_decl(p2),
+            Rule::note_decl => out.note = Some(parse_note_decl(p2)),
             _ => unreachable!("'{:?}' not supposed to get there (project_block)!", p2.as_rule()),
           }
         }
@@ -98,11 +99,11 @@ fn parse_table_decl(pair: Pair<Rule>) -> TableBlock {
       Rule::decl_ident => {
         let (schema, name) = parse_decl_ident(p1);
         
-        out.id.name = name;
-        out.id.schema = schema;
+        out.ident.name = name;
+        out.ident.schema = schema;
       },
       Rule::table_alias => {
-        out.id.alias = Some(p1.as_str().to_string())
+        out.ident.alias = Some(p1.as_str().to_string())
       },
       Rule::table_block => {
         for p2 in p1.into_inner() {
@@ -113,7 +114,10 @@ fn parse_table_decl(pair: Pair<Rule>) -> TableBlock {
               out.fields.push(field)
             },
             Rule::note_decl => {
-              out.note = parse_note_decl(p2)
+              out.note = Some(parse_note_decl(p2))
+            },
+            Rule::indexes_decl => {
+              out.indexes = Some(parse_indexes_decl(p2))
             },
             _ => unreachable!("'{:?}' not supposed to get there (table_block)!", p2.as_rule()),
           }
@@ -214,7 +218,7 @@ fn parse_col_settings(pair: Pair<Rule>) -> ColumnSettings {
                   out.default = Some(parse_value(p2))
                 },
                 Rule::note_inline => {
-                  out.note = parse_note_inline(p2)
+                  out.note = Some(parse_note_inline(p2))
                 },
                 Rule::ref_inline => {
                   out.refs.push(parse_ref_stmt_inline(p2))
@@ -240,8 +244,8 @@ fn parse_enum_decl(pair: Pair<Rule>) -> EnumBlock {
       Rule::decl_ident => {
         let (schema, name) = parse_decl_ident(p1);
         
-        out.id.name = name;
-        out.id.schema = schema;
+        out.ident.name = name;
+        out.ident.schema = schema;
       },
       Rule::enum_block => {
         out.values = parse_enum_block(p1)
@@ -283,7 +287,7 @@ fn parse_enum_value(pair: Pair<Rule>) -> EnumValue {
               for p3 in p2.into_inner() {
                 match p3.as_rule() {
                   Rule::note_inline => {
-                    out.note = parse_note_inline(p3)
+                    out.note = Some(parse_note_inline(p3))
                   },
                   _ => unreachable!("'{:?}' not supposed to get there (enum_attribute)!", p3.as_rule()),
                 }
@@ -326,13 +330,7 @@ fn parse_ref_stmt_inline(pair: Pair<Rule>) -> RefBlock {
   for p1 in pair.into_inner() {
     match p1.as_rule() {
       Rule::relation => {
-        out.rel = match p1.as_str() {
-          "<" => Relation::One2Many,
-          ">" => Relation::Many2One,
-          "-" => Relation::One2One,
-          "<>" => Relation::Many2Many,
-          _ => unreachable!("'{:?}' is not a correct relation symbol!", p1.as_rule()),
-        }
+        out.rel = Relation::match_type(p1.as_str())
       },
       Rule::ref_ident => {
         let value = parse_ref_ident(p1);
@@ -343,6 +341,9 @@ fn parse_ref_stmt_inline(pair: Pair<Rule>) -> RefBlock {
           out.rhs = value;
         }
       },
+      Rule::rel_settings => {
+        out.settings = Some(parse_rel_settings(p1))
+      },
       _ => unreachable!("'{:?}' not supposed to get there (ref_stmt | ref_inline)!", p1.as_rule()),
     }
   }
@@ -350,8 +351,8 @@ fn parse_ref_stmt_inline(pair: Pair<Rule>) -> RefBlock {
   out
 }
 
-fn parse_ref_ident(pair: Pair<Rule>) -> RefId {
-  let mut out = RefId::default();
+fn parse_ref_ident(pair: Pair<Rule>) -> RefIdent {
+  let mut out = RefIdent::default();
   let mut tmp_tokens = vec![];
   
   for p1 in pair.into_inner() {
@@ -399,18 +400,47 @@ fn parse_table_group_decl(pair: Pair<Rule>) -> TableGroupBlock {
             Rule::decl_ident => {
               let (schema, name) = parse_decl_ident(p2);
               
-              let value = TableGroupId {
-                name_1: schema,
-                name_2: name,
+              let value = TableGroupIdent {
+                schema,
+                ident_alias: name,
               };
 
-              out.table_ids.push(value)
+              out.table_idents.push(value)
             },
             _ => unreachable!("'{:?}' not supposed to get there (table_group_block)!", p2.as_rule()),
           }
         }
       }
       _ => unreachable!("'{:?}' not supposed to get there (note_decl)!", p1.as_rule()),
+    }
+  }
+
+  out
+}
+
+fn parse_rel_settings(pair: Pair<Rule>) -> RelationSettings {
+  let mut out = RelationSettings::default();
+  
+  for p1 in pair.into_inner() {
+    match p1.as_rule() {
+      Rule::rel_attribute => {
+        for p2 in p1.into_inner() {
+          match p2.as_rule() {
+            Rule::rel_update  => {
+              for p3 in p2.into_inner() {
+                out.on_update = Some(RelationAction::match_type(p3.as_str()))
+              }
+            },
+            Rule::rel_delete  => {
+              for p3 in p2.into_inner() {
+                out.on_delete = Some(RelationAction::match_type(p3.as_str()))
+              }
+            },
+            _ => unreachable!("'{:?}' not supposed to get there (rel_attribute)!", p2.as_rule()),
+          }
+        }
+      },
+      _ => unreachable!("'{:?}' not supposed to get there (rel_settings)!", p1.as_rule()),
     }
   }
 
@@ -452,6 +482,105 @@ fn parse_note_inline(pair: Pair<Rule>) -> String {
   }
 
   out
+}
+
+fn parse_indexes_decl(pair: Pair<Rule>) -> IndexesBlock {
+  for p1 in pair.into_inner() {
+    match p1.as_rule() {
+      Rule::indexes_block => {
+        return parse_indexes_block(p1)
+      },
+      _ => unreachable!("'{:?}' not supposed to get there (indexes_decl)!", p1.as_rule()),
+    }
+  }
+
+  unreachable!("something went wrong parsing at indexes_decl!");
+}
+
+fn parse_indexes_block(pair: Pair<Rule>) -> IndexesBlock {
+  pair.into_inner().fold(IndexesBlock::default(), |mut acc, p1| {
+    match p1.as_rule() {
+      Rule::indexes_single | Rule::indexes_multi => {
+        acc.defs.push(parse_indexes_single_multi(p1))
+      },
+      _ => unreachable!("'{:?}' not supposed to get there (indexes_block)!", p1.as_rule()),
+    }
+
+    acc
+  })
+}
+
+fn parse_indexes_single_multi(pair: Pair<Rule>) -> IndexesDef {
+  pair.into_inner().fold(IndexesDef::default(), |mut acc, p1| {
+    match p1.as_rule() {
+      Rule::indexes_ident => {
+        acc.idents.push(parse_indexes_ident(p1))
+      },
+      Rule::indexes_settings => {
+        acc.settings = Some(parse_indexes_settings(p1))
+      },
+      _ => unreachable!("'{:?}' not supposed to get there (indexes_single | indexes multi)!", p1.as_rule()),
+    }
+
+    acc
+  })
+}
+
+fn parse_indexes_ident(pair: Pair<Rule>) -> IndexesIdent {
+  for p1 in pair.into_inner() {
+    match p1.as_rule() {
+      Rule::ident => {
+        let value = p1.as_str().to_string();
+        return IndexesIdent::String(value)
+      },
+      Rule::backquoted_quoted_string => {
+        for p2 in p1.into_inner() {
+          match p2.as_rule() {
+            Rule::backquoted_quoted_value => {
+              let value = p2.as_str().to_string();
+              return IndexesIdent::Expr(value)
+            },
+            _ => unreachable!("'{:?}' not supposed to get there (triple_quoted_string)!", p2.as_rule()),
+          }
+        }
+      },
+      _ => unreachable!("'{:?}' not supposed to get there (indexes_ident)!", p1.as_rule()),
+    }
+  }
+
+  unreachable!("something went wrong at indexes_ident");
+}
+
+fn parse_indexes_settings(pair: Pair<Rule>) -> IndexesSettings {
+  pair.into_inner().fold(IndexesSettings::default(), |mut acc, p1| {
+    match p1.as_rule() {
+      Rule::indexes_attribute => {
+        for p2 in p1.into_inner() {
+          match p2.as_str() {
+            "unique" => acc.is_unique = true,
+            "pk" => acc.is_pk = true,
+            _ => {
+              match p2.as_rule() {
+                Rule::indexes_type => {
+                  acc.r#type = p2.into_inner().fold(None, |_, p3| Some(IndexesType::match_type(p3.as_str())))
+                },
+                Rule::indexes_name => {
+                  acc.name = p2.into_inner().fold(None, |_, p3| Some(parse_string_value(p3)))
+                },
+                Rule::note_inline => {
+                  acc.note = Some(parse_note_inline(p2))
+                },
+                _ => unreachable!("'{:?}' not supposed to get there (indexes_attribute)!", p2.as_rule()),
+              }
+            }
+          }
+        }
+      },
+      _ => unreachable!("'{:?}' not supposed to get there (indexes_settings)!", p1.as_rule()),
+    }
+
+    acc
+  })
 }
 
 fn parse_string_value(pair: Pair<Rule>) -> String {

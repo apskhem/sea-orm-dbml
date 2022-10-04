@@ -32,10 +32,15 @@ decl_ident = { ident ~ ("." ~ ident)? }
 
 // ref block
 relation = @{ "<>" | "-" | ">" | "<" }
+rel_action = @{ "cascade" | "restrict" | "set null" | "set default" | "no action" }
+rel_update = { "update" ~ ":" ~ rel_action }
+rel_delete = { "delete" ~ ":" ~ rel_action }
+rel_attribute = { rel_update | rel_delete }
+rel_settings = { "[" ~ (rel_attribute ~ ("," ~ rel_attribute)*)? ~ "]" }
 ref_composition = { ident | ("(" ~ ident ~ ("," ~ ident)* ~ ")") }
 ref_ident = { ident ~ "." ~ (ident ~ ".")? ~ ref_composition }
 ref_inline = { "ref" ~ ":" ~ relation ~ ref_ident }
-ref_stmt = { ref_ident ~ relation ~ ref_ident }
+ref_stmt = { ref_ident ~ relation ~ ref_ident ~ rel_settings? }
 ref_short = { "Ref" ~ ":" ~ ref_stmt }
 ref_block = { "Ref" ~ "{" ~ ref_stmt ~ "}" }
 ref_decl = { ref_block | ref_short }
@@ -45,6 +50,18 @@ note_inline = { "note" ~ ":" ~ string_value }
 note_short = { "Note" ~ ":" ~ string_value }
 note_block = { "Note" ~ "{" ~ string_value ~ "}" }
 note_decl = { note_short | note_block }
+
+// indexes block
+indexes_type_value = @{ "btree" | "gin" | "gist" | "hash" }
+indexes_type = { "type" ~ ":" ~ indexes_type_value }
+indexes_name = { "name" ~ ":" ~ string_value }
+indexes_attribute = { "unique" | "pk" | indexes_type | indexes_name | note_inline }
+indexes_settings = { "[" ~ (indexes_attribute ~ ("," ~ indexes_attribute)*)? ~ "]" }
+indexes_ident = { ident | backquoted_quoted_string }
+indexes_multi = { "(" ~ (indexes_ident ~ ("," ~ indexes_ident)*)? ~ ")" ~ indexes_settings? }
+indexes_single = { indexes_ident ~ indexes_settings? }
+indexes_block = { "{" ~ (indexes_single | indexes_multi)* ~ "}" }
+indexes_decl = { "indexes" ~ indexes_block }
 
 // enum block
 enum_attribute = { note_inline }
@@ -62,7 +79,7 @@ col_type_single = { (var ~ col_type_arg?) | ("\"" ~ (var ~ col_type_arg?) ~ "\""
 col_type_array = { "\"" ~ (var ~ col_type_arg?) ~ "[]" ~ "\"" }
 col_type = { col_type_single | col_type_array }
 table_col = { ident ~ col_type ~ col_settings? }
-table_block = { "{" ~ (table_col | note_decl)* ~ "}" }
+table_block = { "{" ~ (table_col | note_decl | indexes_decl)* ~ "}" }
 table_alias = { "as " ~ ident }
 table_decl = { "Table " ~ decl_ident ~ table_alias? ~ table_block }
 

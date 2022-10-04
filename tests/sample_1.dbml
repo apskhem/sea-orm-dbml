@@ -26,13 +26,24 @@ Table posts {
 }
 
 Table orders {
-    status varchar [
-    note: '
-    💸 1 = processing, 
-    ✔️ 2 = shipped, 
-    ❌ 3 = cancelled,
-    😔 4 = refunded
-    ']
+  status varchar [
+  note: '
+  💸 1 = processing, 
+  ✔️ 2 = shipped, 
+  ❌ 3 = cancelled,
+  😔 4 = refunded
+  ']
+
+  indexes {
+    (id, country) [pk] // composite primary key
+    created_at [name: 'created_at_index', note: 'Date']
+    booking_date
+    (country, booking_date) [type: btree, unique]
+    booking_date [type: hash]
+    (`id*2`)
+    (`id*3`,`getdate()`)
+    (`id*3`, id)
+  }
 }
 
 enum post_status {
@@ -41,4 +52,4 @@ enum post_status {
   private [note: 'visible via URL only']
 }
 
-Ref: posts.user_id > users.id // many-to-one
+Ref: posts.user_id > users.id [update: restrict] // many-to-one
