@@ -26,7 +26,7 @@ Below is the example of transpiling DBML into SeaORM entity.
 
 ```dbml
 Table user {
-  id integer
+  id integer [pk]
   username varchar
   role varchar
 }
