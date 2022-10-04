@@ -30,21 +30,19 @@ pub fn parse(input: &str) -> Result<SchemaBlock, Error<Rule>> {
 }
 
 fn parse_schema(pair: Pair<Rule>) -> SchemaBlock {
-  let mut out = SchemaBlock::default();
-  
-  for p1 in pair.into_inner() {
+  pair.into_inner().fold(SchemaBlock::default(), |mut acc, p1| {
     match p1.as_rule() {
-      Rule::project_decl => out.project = Some(parse_project_decl(p1)),
-      Rule::table_decl => out.tables.push(parse_table_decl(p1)),
-      Rule::enum_decl => out.enums.push(parse_enum_decl(p1)),
-      Rule::ref_decl => out.refs.push(parse_ref_decl(p1)),
-      Rule::table_group_decl => out.table_groups.push(parse_table_group_decl(p1)),
+      Rule::project_decl => acc.project = Some(parse_project_decl(p1)),
+      Rule::table_decl => acc.tables.push(parse_table_decl(p1)),
+      Rule::enum_decl => acc.enums.push(parse_enum_decl(p1)),
+      Rule::ref_decl => acc.refs.push(parse_ref_decl(p1)),
+      Rule::table_group_decl => acc.table_groups.push(parse_table_group_decl(p1)),
       Rule::EOI => (),
       _ => unreachable!("'{:?}' not supposed to get there (top-level declaration)!", p1.as_rule()),
-    }
-  }
+    };
 
-  out
+    acc
+  })
 }
 
 fn parse_project_decl(pair: Pair<Rule>) -> ProjectBlock {
@@ -626,31 +624,31 @@ fn parse_value(pair: Pair<Rule>) -> Value {
         out = Some(Value::String(value));
       },
       Rule::number_value => {
-        for p3 in p2.into_inner() {
+        out = p2.into_inner().fold(None, |_, p3| {
           match p3.as_rule() {
             Rule::decimal => {
               let value = p3.as_str().parse::<f32>().unwrap();
 
-              out = Some(Value::Decimal(value));
+              Some(Value::Decimal(value))
             },
             Rule::integer => {
               let value = p3.as_str().parse::<i32>().unwrap();
 
-              out = Some(Value::Integer(value));
+              Some(Value::Integer(value))
             },
             _ => unreachable!("'{:?}' not supposed to get there (number_value)!", p3.as_rule()),
           }
-        }
+        })
       },
       Rule::boolean_value => {
-        for p3 in p2.into_inner() {
+        out = p2.into_inner().fold(None, |_, p3| {
           match p3.as_str() {
-            "true" => out = Some(Value::Bool(true)),
-            "false" => out = Some(Value::Bool(false)),
-            "null" => out = Some(Value::Null),
+            "true" => Some(Value::Bool(true)),
+            "false" => Some(Value::Bool(false)),
+            "null" => Some(Value::Null),
             _ => unreachable!("'{:?}' not supposed to get there (boolean_value)!", p3.as_rule()),
           }
-        }
+        })
       },
       _ => unreachable!("'{:?}' not supposed to get there (value)!", p2.as_rule()),
     }
@@ -662,14 +660,13 @@ fn parse_value(pair: Pair<Rule>) -> Value {
 fn parse_decl_ident(pair: Pair<Rule>) -> (Option<String>, String) {
   let mut schema = None;
   let mut name = String::default();
-  let mut tmp_tokens = vec![];
-  
-  for p1 in pair.into_inner() {
+
+  let mut tmp_tokens: Vec<_> = pair.into_inner().map(|p1| {
     match p1.as_rule() {
-      Rule::ident => tmp_tokens.push(p1.as_str().to_string()),
+      Rule::ident => p1.as_str().to_string(),
       _ => unreachable!("'{:?}' not supposed to get there (decl_indent)!", p1.as_rule()),
     }
-  }
+  }).collect();
 
   if tmp_tokens.len() == 2 {
     schema = Some(tmp_tokens.remove(0));
