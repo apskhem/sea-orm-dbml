@@ -17,7 +17,7 @@ triple_quoted_string = { "'''" ~ triple_quoted_value ~ "'''" }
 
 var = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
 
-ident = @{ var | double_quoted_string }
+ident = { var | double_quoted_string }
 
 // values
 string_value = { triple_quoted_string | single_quoted_string }

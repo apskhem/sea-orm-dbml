@@ -25,8 +25,14 @@ impl Codegen {
     self
   }
 
-  pub fn empty_line(mut self, line_count: usize) -> Self {
-    self.root_block = self.root_block.empty_line(line_count);
+  pub fn line_cond(mut self, cond: bool, line_content: impl ToString) -> Self {
+    self.root_block = self.root_block.line_cond(cond, line_content);
+
+    self
+  }
+
+  pub fn line_skip(mut self, line_count: usize) -> Self {
+    self.root_block = self.root_block.line_skip(line_count);
 
     self
   }
@@ -77,6 +83,7 @@ impl Block {
     }
   }
 
+  /// Inserts a single line with the given text content.
   pub fn line(mut self, line_content: impl ToString) -> Self {
     let indent = "\t".repeat(self.level);
 
@@ -87,7 +94,23 @@ impl Block {
     self
   }
 
-  pub fn empty_line(mut self, line_count: usize) -> Self {
+  /// Inserts a single line when the condition is `true`.
+  pub fn line_cond(mut self, cond: bool, line_content: impl ToString) -> Self {
+    if !cond {
+      return self;
+    }
+
+    let indent = "\t".repeat(self.level);
+
+    let new_content = format!("{}{}", indent, line_content.to_string());
+
+    self.content = format!("{}{}\n", self.content, new_content);
+
+    self
+  }
+
+  /// Inserts empty lines for the given count.
+  pub fn line_skip(mut self, line_count: usize) -> Self {
     let line_string = "\n".repeat(line_count);
 
     self.content = format!("{}{}", self.content, line_string);
@@ -95,6 +118,7 @@ impl Block {
     self
   }
 
+  /// Inserts a block to the scope.
   pub fn block(mut self, block: Block) -> Self {
     self.content = format!("{}{}\n", self.content, block.to_string());
 

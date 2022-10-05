@@ -6,7 +6,7 @@ pub mod users {
 	use sea_orm::entity::prelude::*;
 
 	#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-	#[sea_orm(table_name = "users")]
+	#[sea_orm(table_name = "users", schema_name = "public")]
 	pub struct Model {
 		#[sea_orm(primary_key)]
 		pub id: u32,
@@ -26,7 +26,7 @@ pub mod posts {
 	use sea_orm::entity::prelude::*;
 
 	#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-	#[sea_orm(table_name = "posts")]
+	#[sea_orm(table_name = "posts", schema_name = "public")]
 	pub struct Model {
 		#[sea_orm(primary_key)]
 		pub id: u32,
@@ -48,7 +48,7 @@ pub mod orders {
 	use sea_orm::entity::prelude::*;
 
 	#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-	#[sea_orm(table_name = "orders")]
+	#[sea_orm(table_name = "orders", schema_name = "public")]
 	pub struct Model {
 		#[sea_orm(primary_key)]
 		pub id: u32,
@@ -62,8 +62,8 @@ pub mod orders {
 	impl ActiveModelBehavior for ActiveModel {}
 }
 
-#[derive(EnumIter, DeriveActiveEnum)]
-#[sea_orm(rs_type = "i32", db_type = "Integer", enum_name = "post_status")]
+#[derive(Debug, PartialEq, EnumIter, DeriveActiveEnum)]
+#[sea_orm(rs_type = "i32", db_type = "Integer", enum_name = "post_status", schema_name = "public")]
 pub enum PostStatus {
 	#[sea_orm(num_value = 0)]
 	Draft,
