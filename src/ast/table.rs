@@ -2,18 +2,18 @@ use super::*;
 
 #[derive(Debug, PartialEq, Clone, Default)]
 pub struct TableBlock {
-  pub fields: Vec<TableField>,
+  pub cols: Vec<TableColumn>,
   pub ident: TableIdent,
   pub note: Option<String>,
   pub indexes: Option<indexes::IndexesBlock>
 }
 
 #[derive(Debug, PartialEq, Clone, Default)]
-pub struct TableField {
-  pub col_name: String,
-  pub col_type: ColumnType,
-  pub col_args: Vec<Value>,
-  pub col_settings: ColumnSettings,
+pub struct TableColumn {
+  pub name: String,
+  pub r#type: ColumnType,
+  pub args: Vec<Value>,
+  pub settings: ColumnSettings,
 }
 
 #[derive(Debug, PartialEq, Clone)]

@@ -35,25 +35,6 @@ impl SchemaBlock {
     unimplemented!();
   }
 
-  pub fn into_semantic(self) -> SematicSchemaBlock {
-    let Self {
-      project,
-      tables,
-      table_groups,
-      refs,
-      enums,
-      ..
-    } = self;
-
-    SematicSchemaBlock {
-      project,
-      tables,
-      table_groups,
-      refs,
-      enums
-    }
-  }
-
   pub fn print(&self) {
     println!("Project:");
 
@@ -77,16 +58,3 @@ impl SchemaBlock {
   }
 }
 
-#[derive(Debug, PartialEq, Clone, Default)]
-pub struct SematicSchemaBlock {
-  /// Overall description of the project. This is optional. The file must contain one or zero 'Project' block.
-  pub project: Option<project::ProjectBlock>,
-  /// Table block.
-  pub tables: Vec<table::TableBlock>,
-  /// TableGroup block.
-  pub table_groups: Vec<table_group::TableGroupBlock>,
-  /// Ref block.
-  pub refs: Vec<refs::RefBlock>,
-  /// Enums block.
-  pub enums: Vec<enums::EnumBlock>
-}

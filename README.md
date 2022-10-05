@@ -58,11 +58,16 @@ pub mod user {
 
 The tool aims to support various types of ORM not only in Rust.
 
-|     ORM Entity    |        Progress        | Version |
-|:-----------------:|:----------------------:|---------|
-| SeaORM PostgreSQL | Working in progress... | v0.9    |
-| SeaORM MySQL      | Observed.              | v0.9    |
-| SeaORM SQLite     | Observed.              | v0.9    |
+|         ORM Entity         |        Progress        | Version |
+|:--------------------------:|:----------------------:|---------|
+| SeaORM PostgreSQL          | Working in progress... | v0.9    |
+| SeaORM MySQL               | Observed.              | v0.9    |
+| SeaORM SQLite              | Observed.              | v0.9    |
+| Diesel                     | Observed.              | v2      |
+| TypeORM                    | Observed.              | v0.3    |
+| Prisma                     | Observed.              | v4      |
+| Mongoose                   | Observed.              | v6      |
+| TypeScript Type Definition | Observed.              | v4      |
 
 ## How to use it?
 

@@ -107,7 +107,7 @@ fn parse_table_decl(pair: Pair<Rule>) -> ParsingResult<TableBlock> {
         p1.into_inner().try_for_each(|p2| {
           match p2.as_rule() {
             Rule::table_col => {
-              acc.fields.push(parse_table_col(p2)?)
+              acc.cols.push(parse_table_col(p2)?)
             },
             Rule::note_decl => {
               acc.note = Some(parse_note_decl(p2)?)
@@ -128,21 +128,21 @@ fn parse_table_decl(pair: Pair<Rule>) -> ParsingResult<TableBlock> {
   })
 }
 
-fn parse_table_col(pair: Pair<Rule>) -> ParsingResult<TableField> {
-  pair.into_inner().try_fold(TableField::default(), |mut acc, p1| {
+fn parse_table_col(pair: Pair<Rule>) -> ParsingResult<TableColumn> {
+  pair.into_inner().try_fold(TableColumn::default(), |mut acc, p1| {
     match p1.as_rule() {
       Rule::ident => {
-        acc.col_name = parse_ident(p1)?
+        acc.name = parse_ident(p1)?
       },
       Rule::col_type => {
         let (col_type, col_args, is_array) = parse_col_type(p1)?;
 
-        acc.col_settings.is_array = is_array;
-        acc.col_args = col_args;
-        acc.col_type = col_type;
+        acc.settings.is_array = is_array;
+        acc.args = col_args;
+        acc.r#type = col_type;
       },
       Rule::col_settings => {
-        acc.col_settings = parse_col_settings(p1)?
+        acc.settings = parse_col_settings(p1)?
       },
       _ => throw_rules(&[Rule::ident, Rule::col_type, Rule::col_settings], p1)?,
     }
@@ -636,8 +636,6 @@ fn parse_value(pair: Pair<Rule>) -> ParsingResult<Value> {
 }
 
 fn parse_decl_ident(pair: Pair<Rule>) -> ParsingResult<(Option<String>, String)> {
-  let mut schema = None;
-  let mut name = String::new();
   let mut tmp_tokens = vec![];
 
   for p1 in pair.into_inner() {
@@ -647,14 +645,15 @@ fn parse_decl_ident(pair: Pair<Rule>) -> ParsingResult<(Option<String>, String)>
     }
   }
 
-  if tmp_tokens.len() == 2 {
-    schema = Some(tmp_tokens.remove(0));
-    name = tmp_tokens.remove(0);
+  let (schema, name) = if tmp_tokens.len() == 2 {
+    let schema = Some(tmp_tokens.remove(0));
+
+    (schema, tmp_tokens.remove(0))
   } else if tmp_tokens.len() == 1 {
-    name = tmp_tokens.remove(0);
+    (None, tmp_tokens.remove(0))
   } else {
     unreachable!("unwell formatted decl_ident!")
-  }
+  };
 
   Ok((schema, name))
 }
