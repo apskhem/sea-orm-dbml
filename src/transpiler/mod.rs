@@ -15,11 +15,11 @@ use inflector::Inflector;
 mod traits;
 use traits::*;
 mod err;
-use err::*;
+mod config;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Target {
-  SeaORMPostgreSQL
+  SeaORM
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -70,7 +70,7 @@ impl Config {
 
 fn transpile(ast: analyzer::SematicSchemaBlock, target: &Target) -> Result<String> {
   match target {
-    Target::SeaORMPostgreSQL => transpile_sea_orm_postgresql(ast)
+    Target::SeaORM => transpile_sea_orm_postgresql(ast)
   }
 }
 

@@ -10,6 +10,7 @@ pub mod users {
 	pub struct Model {
 		#[sea_orm(primary_key)]
 		pub id: u32,
+		pub age: u32,
 		pub username: u32,
 		pub role: u32,
 		pub created_at: u32,

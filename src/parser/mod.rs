@@ -6,6 +6,7 @@ use pest::iterators::Pair;
 
 use crate::ast::enums::*;
 use crate::ast::indexes::*;
+use crate::ast::project;
 use crate::ast::project::*;
 use crate::ast::refs::*;
 use crate::ast::table::*;
@@ -61,7 +62,7 @@ fn parse_project_decl(pair: Pair<Rule>) -> ParsingResult<ProjectBlock> {
               let (key, value) = parse_project_stmt(p2)?;
 
               match key.as_str() {
-                "database_type" => acc.database_type = value,
+                "database_type" => acc.database_type = project::DatabaseType::match_type(&value),
                 _ => throw_msg(format!("'{}' key is invalid inside project_block", key), p2_cloned)?,
               }
             },
@@ -82,9 +83,9 @@ fn parse_project_decl(pair: Pair<Rule>) -> ParsingResult<ProjectBlock> {
 fn parse_project_stmt(pair: Pair<Rule>) -> ParsingResult<(String, String)> {
   pair.into_inner().try_fold((String::new(), String::new()), |mut acc, p1| {
     match p1.as_rule() {
-      Rule::project_key => acc.0 = p1.as_str().to_string(),
+      Rule::var => acc.0 = p1.as_str().to_string(),
       Rule::string_value => acc.1 = parse_string_value(p1)?,
-      _ => throw_rules(&[Rule::project_key, Rule::string_value], p1)?,
+      _ => throw_rules(&[Rule::var, Rule::string_value], p1)?,
     }
     
     Ok(acc)
@@ -101,7 +102,7 @@ fn parse_table_decl(pair: Pair<Rule>) -> ParsingResult<TableBlock> {
         acc.ident.schema = schema;
       },
       Rule::table_alias => {
-        acc.ident.alias = Some(p1.as_str().to_string())
+        acc.ident.alias = Some(p1.into_inner().as_str().to_string())
       },
       Rule::table_block => {
         p1.into_inner().try_for_each(|p2| {
@@ -120,8 +121,11 @@ fn parse_table_decl(pair: Pair<Rule>) -> ParsingResult<TableBlock> {
 
           Ok(())
         })?
-      }
-      _ => throw_rules(&[Rule::decl_ident, Rule::table_alias, Rule::table_block], p1)?,
+      },
+      Rule::table_settings => {
+        // TODO:
+      },
+      _ => throw_rules(&[Rule::decl_ident, Rule::table_alias, Rule::table_block, Rule::table_settings], p1)?,
     }
 
     Ok(acc)
@@ -166,6 +170,9 @@ fn parse_col_type(pair: Pair<Rule>) -> ParsingResult<(ColumnType, Vec<Value>, bo
             Rule::var => {
               col_type = ColumnType::Raw(p2.as_str().to_string())
             },
+            Rule::double_quoted_value => {
+              col_type = ColumnType::Raw(p2.as_str().to_string())
+            },
             Rule::col_type_arg => {
               col_args = parse_col_type_arg(p2)?
             },
@@ -197,27 +204,33 @@ fn parse_col_settings(pair: Pair<Rule>) -> ParsingResult<ColumnSettings> {
   pair.into_inner().try_fold(ColumnSettings::default(), |mut acc, p1| {
     match p1.as_rule() {
       Rule::col_attribute => {
-        match p1.as_str() {
-          "unique" => acc.is_unique = true,
-          "primary key" | "pk" => acc.is_pk = true,
-          "null" => acc.is_nullable = true,
-          "not null" => (),
-          "increment" => acc.is_incremental = true,
-          _ => {
-            for p2 in p1.into_inner() {
-              match p2.as_rule() {
-                Rule::col_default => {
-                  acc.default = Some(parse_value(p2)?)
-                },
-                Rule::note_inline => {
-                  acc.note = Some(parse_note_inline(p2)?)
-                },
-                Rule::ref_inline => {
-                  acc.refs.push(parse_ref_stmt_inline(p2)?)
-                },
-                _ => throw_msg(format!("'{}' is not the valid attribute for col_attribute", p2.as_str()), p2)?,
+        for p2 in p1.into_inner() {
+          match p2.as_rule() {
+            Rule::col_attribute_key => {
+              match p2.as_str() {
+                "unique" => acc.is_unique = true,
+                "primary key" | "pk" => acc.is_pk = true,
+                "null" => acc.is_nullable = true,
+                "not null" => (),
+                "increment" => acc.is_incremental = true,
+                _ => throw_msg(format!("'{}' is invalid col_attribute_key!", p2.as_str()), p2)?,
               }
             }
+            Rule::col_default => {
+              for p3 in p2.into_inner() {
+                match p3.as_rule() {
+                  Rule::value => acc.default = Some(parse_value(p3)?),
+                  _ => throw_rules(&[Rule::value], p3)?,
+                }
+              }
+            },
+            Rule::note_inline => {
+              acc.note = Some(parse_note_inline(p2)?)
+            },
+            Rule::ref_inline => {
+              acc.refs.push(parse_ref_stmt_inline(p2)?)
+            },
+            _ => throw_rules(&[Rule::col_attribute_key, Rule::col_default, Rule::note_inline, Rule::ref_inline], p2)?,
           }
         }
       },
@@ -530,27 +543,28 @@ fn parse_indexes_settings(pair: Pair<Rule>) -> ParsingResult<IndexesSettings> {
     match p1.as_rule() {
       Rule::indexes_attribute => {
         for p2 in p1.into_inner() {
-          match p2.as_str() {
-            "unique" => acc.is_unique = true,
-            "pk" => acc.is_pk = true,
-            _ => {
-              match p2.as_rule() {
-                Rule::indexes_type => {
-                  acc.r#type = p2.into_inner().fold(None, |_, p3| Some(IndexesType::match_type(p3.as_str())))
-                },
-                Rule::indexes_name => {
-                  p2.into_inner().try_for_each(|p3| {
-                    acc.name = Some(parse_string_value(p3)?);
-
-                    Ok(())
-                  })?
-                },
-                Rule::note_inline => {
-                  acc.note = Some(parse_note_inline(p2)?)
-                },
+          match p2.as_rule() {
+            Rule::indexes_attribute_key => {
+              match p2.as_str() {
+                "unique" => acc.is_unique = true,
+                "pk" => acc.is_pk = true,
                 _ => throw_msg(format!("'{}' key is invalid inside indexes_attribute", p2.as_str()), p2)?,
               }
-            }
+            },
+            Rule::indexes_type => {
+              acc.r#type = p2.into_inner().fold(None, |_, p3| Some(IndexesType::match_type(p3.as_str())))
+            },
+            Rule::indexes_name => {
+              p2.into_inner().try_for_each(|p3| {
+                acc.name = Some(parse_string_value(p3)?);
+
+                Ok(())
+              })?
+            },
+            Rule::note_inline => {
+              acc.note = Some(parse_note_inline(p2)?)
+            },
+            _ => throw_rules(&[Rule::indexes_attribute_key, Rule::indexes_type, Rule::indexes_name, Rule::note_inline], p2)?,
           }
         }
       },
@@ -628,7 +642,19 @@ fn parse_value(pair: Pair<Rule>) -> ParsingResult<Value> {
           }
         }
       },
-      _ => throw_rules(&[Rule::string_value, Rule::number_value, Rule::boolean_value], p1)?,
+      Rule::hex_value => {
+        return Ok(Value::Expr(p1.as_str().to_string()))
+      },
+      Rule::backquoted_quoted_string => {
+        return Ok(Value::Expr(p1.into_inner().as_str().to_string()))
+      },
+      _ => throw_rules(&[
+        Rule::string_value,
+        Rule::number_value,
+        Rule::boolean_value,
+        Rule::hex_value,
+        Rule::backquoted_quoted_string
+      ], p1)?,
     }
   }
 
@@ -665,7 +691,7 @@ fn parse_ident(pair: Pair<Rule>) -> ParsingResult<String> {
         Ok(p1.as_str().to_string())
       },
       Rule::double_quoted_string => {
-        Ok(p1.into_inner().fold(String::new(), |_, p2| p2.as_str().to_string()))
+        Ok(p1.into_inner().as_str().to_string())
       },
       _ => throw_rules(&[Rule::var, Rule::double_quoted_string], p1)?,
     }

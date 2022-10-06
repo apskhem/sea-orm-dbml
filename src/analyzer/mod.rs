@@ -42,13 +42,18 @@ impl schema::SchemaBlock {
       enums,
     } = self;
 
+    // check project block
+    if let Some(project_block) = &project {
+
+    } else {
+      panic!("no_project_block_found");
+    }
+
     // collect tables
     let mut indexed_refs: Vec<block::IndexedRefBlock> = refs.into_iter().map(block::IndexedRefBlock::from).collect();
     let mut table_group_map = HashMap::new();
     let mut schema_map = HashMap::<String, IndexedSchemaBlock>::new();
     let mut alias_map = HashMap::new();
-
-    let mut tmp_refs: Vec<refs::RefBlock> = vec![];
 
     for table in tables.iter() {
       let table::TableIdent {
@@ -64,16 +69,16 @@ impl schema::SchemaBlock {
       for col in table.cols.iter() {
         if col.settings.is_pk {
           if is_pk_passed {
-            // TODO: handle pk_dup exception
+            panic!("pk_dup");
           } else {
             is_pk_passed = true;
           }
 
           if col.settings.is_nullable {
-            // TODO: handle nullable_pk exception
+            panic!("nullable_pk");
           }
           if col.settings.is_array {
-            // TODO: handle array_pk exception
+            panic!("array_pk");
           }
         }
 
@@ -86,7 +91,7 @@ impl schema::SchemaBlock {
         indexed_refs.extend(indexed_ref);
 
         if let Some(dup_col_name) = col_sets.get(&col.name) {
-          // TODO: handle col_name_dup exception
+          panic!("col_name_dup");
         } else {
           col_sets.insert(col.name.clone());
         }
@@ -97,7 +102,7 @@ impl schema::SchemaBlock {
 
         if let Some(alias) = alias {
           if let Some(dup_alias) = alias_map.get(&alias) {
-            // TODO: handle alias_name_dup exception
+            panic!("alias_name_dup");
           } else {
             alias_map.insert(alias.clone(), (schema.clone(), name.clone()));
           }
@@ -127,7 +132,7 @@ impl schema::SchemaBlock {
 
       for value in r#enum.values.iter() {
         if let Some(dup_col_name) = value_sets.get(&value.value) {
-          // TODO: handle val_dup exception
+          panic!("val_dup");
         } else {
           value_sets.insert(value.value.clone());
         }
@@ -145,11 +150,35 @@ impl schema::SchemaBlock {
     }
 
     // collect table_group
-    for table_group in table_groups.iter() {
+    for table_group in table_groups.clone().into_iter() {
+      for table in table_group.table_idents.into_iter() {
+        let schema_name = table.schema.unwrap_or_else(|| DEFAULT_SCHEMA.into());
+        let ident_alias = table.ident_alias;
 
+        let ident = if let Some(ident) = alias_map.get(&ident_alias) {
+          if !schema_name.eq("public") {
+            panic!("alias_must_not_followed_by_schema")
+          }
+
+          ident.1.clone()
+        } else {
+          ident_alias
+        };
+
+        if let Some(index_block) = schema_map.get(&schema_name) {
+          if !index_block.table_map.contains_key(&ident) {
+            panic!("table_not_found");
+          }
+        } else {
+          panic!("schema_not_found");
+        }
+      }
+
+      // TODO: add table inside table_group
+      table_group_map.insert(table_group.name.clone(), HashSet::new());
     }
 
-    println!("schema: {:?}", &schema_map);
+    println!("schema: {:?}\n", &schema_map);
     println!("indexed_refs: {:?}", &indexed_refs);
 
     SematicSchemaBlock {

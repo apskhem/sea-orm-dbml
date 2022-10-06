@@ -22,6 +22,8 @@ pub enum Value {
   Integer(i32),
   Decimal(f32),
   Bool(bool),
+  Hex(String),
+  Expr(String),
   Null
 }
 

@@ -5,18 +5,19 @@ Project project_name {
 
 TableGroup order {
   users 
-  posts 
+  P 
   orders
 }
 
 Table users {
   id integer [pk]
+  age integer [default: 10]
   username varchar
   role varchar
   created_at timestamp
 }
 
-Table posts {
+Table posts as P {
   id integer [pk]
   title varchar
   body text [note: 'Content of the post']

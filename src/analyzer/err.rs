@@ -3,11 +3,10 @@
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Err {
   ProjectSettingNotFound,
-  RefActionNotFound,
   TableGroupNotFound,
-  DuplicateProjectSetting,
   NullablePrimaryKey,
   ArrayPrimaryKey,
+  DuplicateProjectSetting,
   DuplicatePrimaryKey,
   DuplicateTableName,
   DuplicateRelation,
