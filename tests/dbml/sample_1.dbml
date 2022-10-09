@@ -15,6 +15,7 @@ Table users {
   username varchar
   role varchar
   created_at timestamp
+  referral_id integer [ref: > users.id]
 }
 
 Table posts as P {

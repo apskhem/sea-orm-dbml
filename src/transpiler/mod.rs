@@ -125,11 +125,54 @@ fn transpile_sea_orm_postgresql(ast: analyzer::SematicSchemaBlock) -> Result<Str
     });
 
     // relation listing
-    // FIXME: watch for self referencing vec
-    let (rto_vec, rby_vec) = ast.get_table_refs(&ident);
+    let (rto_vec, rby_vec, rself_vec) = ast.get_table_refs(&ident);
+
+    let rel_block = rself_vec.into_iter().fold(rel_block, |acc, rto| {
+      let from_field_pascal = rto.lhs.compositions.get(0).unwrap().to_pascal_case();
+      let to_field_pascal = rto.rhs.compositions.get(0).unwrap().to_pascal_case();
+
+      let derive = {
+        let mut attrs = vec![
+            format!(r#"belongs_to = "Entity""#),
+            format!(r#"from = "Column::{}""#, from_field_pascal),
+            format!(r#"to = "Column::{}""#, to_field_pascal),
+          ];
+
+          if let Some(settings) = rto.settings {
+            if let Some(action) = settings.on_delete {
+              attrs.push(format!(r#"on_delete = "{}""#, action.to_string().to_pascal_case()))
+            }
+            if let Some(action) = settings.on_update {
+              attrs.push(format!(r#"on_update = "{}""#, action.to_string().to_pascal_case()))
+            }
+          }
+
+          format!(r#"#[sea_orm({})]"#, attrs.join(", "))
+      };
+
+      rel_entity_blocks.push(
+        Block::new(2, Some("pub struct SelfReferencingLink"))
+      );
+
+      rel_entity_blocks.push(
+        Block::new(2, Some("impl Linked for SelfReferencingLink"))
+          .line("type FromEntity = Entity;")
+          .line("type ToEntity = Entity;")
+          .line_skip(1)
+          .block(
+            Block::new(3, Some("fn link(&self) -> Vec<RelationDef>"))
+              .line("vec![Relation::SelfReferencing.def()]")
+          )
+      );
+
+      acc
+        .line(derive)
+        .line("SelfReferencing,")
+    });
 
     let rel_block = rto_vec.into_iter().fold(rel_block, |acc, rto| {
-      let ref_field_pascal = rto.lhs.compositions.get(0).unwrap().to_pascal_case();
+      let from_field_pascal = rto.lhs.compositions.get(0).unwrap().to_pascal_case();
+      let to_field_pascal = rto.rhs.compositions.get(0).unwrap().to_pascal_case();
       let name_pascal = rto.rhs.table.to_pascal_case();
       let name_snake = rto.rhs.table.to_snake_case();
 
@@ -138,8 +181,8 @@ fn transpile_sea_orm_postgresql(ast: analyzer::SematicSchemaBlock) -> Result<Str
         | refs::Relation::Many2One => {
           let mut attrs = vec![
             format!(r#"belongs_to = "super::{}::Entity""#, name_snake),
-            format!(r#"from = "Column::{}""#, ref_field_pascal),
-            format!(r#"to = "super::{}::Column::Id""#, name_snake),
+            format!(r#"from = "Column::{}""#, from_field_pascal),
+            format!(r#"to = "super::{}::Column::{}""#, name_snake, to_field_pascal),
           ];
 
           if let Some(settings) = rto.settings {
@@ -166,7 +209,7 @@ fn transpile_sea_orm_postgresql(ast: analyzer::SematicSchemaBlock) -> Result<Str
 
       acc
         .line(derive)
-        .line(name_pascal)
+        .line(format!("{},", name_pascal))
     });
 
     let rel_block = rby_vec.into_iter().fold(rel_block, |acc, rby| {
@@ -193,7 +236,7 @@ fn transpile_sea_orm_postgresql(ast: analyzer::SematicSchemaBlock) -> Result<Str
 
       acc
         .line(derive)
-        .line(name_pascal)
+        .line(format!("{},", name_pascal))
     });
 
     // construct mod block
@@ -220,10 +263,8 @@ fn transpile_sea_orm_postgresql(ast: analyzer::SematicSchemaBlock) -> Result<Str
       ident: enums::EnumIdent {
         name,
         schema,
-        ..
       },
       values,
-      ..
     } = r#enum;
 
     let enum_block = Block::new(1, Some(format!("pub enum {}", name.to_pascal_case())));

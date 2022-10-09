@@ -18,12 +18,27 @@ pub mod users {
 		pub role: String,
 		#[sea_orm(column_type = "DateTime")]
 		pub created_at: DateTime,
+		#[sea_orm(column_type = "Integer")]
+		pub referral_id: i32,
 	}
 
 	#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 	pub enum Relation {
+		#[sea_orm(belongs_to = "Entity", from = "Column::ReferralId", to = "Column::Id")]
+		SelfReferencing,
 		#[sea_orm(has_many = "super::posts::Entity")]
-		Posts
+		Posts,
+	}
+
+	pub struct SelfReferencingLink {}
+
+	impl Linked for SelfReferencingLink {
+		type FromEntity = Entity;
+		type ToEntity = Entity;
+
+		fn link(&self) -> Vec<RelationDef> {
+			vec![Relation::SelfReferencing.def()]
+		}
 	}
 
 	impl Related<super::posts::Entity> for Entity {
@@ -57,7 +72,7 @@ pub mod posts {
 	#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 	pub enum Relation {
 		#[sea_orm(belongs_to = "super::users::Entity", from = "Column::UserId", to = "super::users::Column::Id")]
-		Users
+		Users,
 	}
 
 	impl Related<super::users::Entity> for Entity {

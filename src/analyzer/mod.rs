@@ -21,27 +21,35 @@ pub struct SematicSchemaBlock {
   pub indexer: indexer::Indexer,
 }
 
+type TableRefTuple = (Vec<block::IndexedRefBlock>, Vec<block::IndexedRefBlock>, Vec<block::IndexedRefBlock>);
+
 impl SematicSchemaBlock {
-  /// Gets a table block's relation (ref to, ref by).
-  pub fn get_table_refs(&self, table_ident: &table::TableIdent) -> (Vec<block::IndexedRefBlock>, Vec<block::IndexedRefBlock>) {
+  /// Gets a table block's relation (ref to, ref by, ref self).
+  pub fn get_table_refs(&self, table_ident: &table::TableIdent) -> TableRefTuple {
     let mut ref_to_blocks = vec![];
     let mut ref_by_blocks = vec![];
+    let mut ref_self_blocks = vec![];
+
+    let eq = |table_ident: &table::TableIdent, ref_ident: &refs::RefIdent| {
+      table_ident.schema == ref_ident.schema && table_ident.name == ref_ident.table
+    };
 
     for ref_block in self.refs.iter() {
       let lhs_ident = self.indexer.refer_ref_alias(&ref_block.lhs);
       let rhs_ident = self.indexer.refer_ref_alias(&ref_block.rhs);
 
-      // TODO: handle self reference relation
-
-      if table_ident.schema == lhs_ident.schema && table_ident.name == lhs_ident.table {
+      if eq(&table_ident, &lhs_ident) && eq(&table_ident, &rhs_ident) {
+        ref_self_blocks.push(ref_block.clone())
+      }
+      else if eq(&table_ident, &lhs_ident) {
         ref_to_blocks.push(ref_block.clone())
       }
-      if table_ident.schema == rhs_ident.schema && table_ident.name == rhs_ident.table {
+      else if eq(&table_ident, &rhs_ident) {
         ref_by_blocks.push(ref_block.clone())
       }
     }
 
-    (ref_to_blocks, ref_by_blocks)
+    (ref_to_blocks, ref_by_blocks, ref_self_blocks)
   }
 }
 
