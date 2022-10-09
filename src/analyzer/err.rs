@@ -2,20 +2,24 @@
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Err {
-  ProjectSettingNotFound,
-  TableGroupNotFound,
   NullablePrimaryKey,
   ArrayPrimaryKey,
-  DuplicateProjectSetting,
-  DuplicatePrimaryKey,
-  DuplicateTableName,
-  DuplicateRelation,
-  DuplicateEnumName,
-  DuplicateTableGroupName,
+  ConflictedPrimaryKey,
+  DuplicatedProjectSetting,
+  DuplicatedPrimaryKey,
+  DuplicatedTableName,
+  DuplicatedRelation,
+  DuplicatedEnumName,
+  DuplicatedEnumValue,
+  DuplicatedTableGroupName,
+  ProjectSettingNotFound,
+  TableGroupNotFound,
   SchemaNotFound,
   TableNotFound,
   ColumnNotFound,
   EnumNotFound,
   EnumValueNotFound,
   MismatchedForeignKeyType,
+  MismatchedCompositeForeignKey,
+  UnsupportedSyntax
 }

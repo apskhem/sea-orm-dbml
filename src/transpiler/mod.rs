@@ -98,10 +98,14 @@ fn transpile_sea_orm_postgresql(ast: analyzer::SematicSchemaBlock) -> Result<Str
     let table_block = fields.into_iter().fold(table_block,|acc, field| {
       let mut out_fields = vec![];
 
+      if let Some(exp_type) = field.r#type.to_col_type(&field.args) {
+        out_fields.push(format!(r#"column_type = "{}""#, exp_type))
+      }
       if field.settings.is_pk {
-        out_fields.push("primary_key")
-      } else if field.settings.is_nullable {
-        out_fields.push("nullable")
+        out_fields.push(format!("primary_key"))
+      }
+      if field.settings.is_nullable {
+        out_fields.push(format!("nullable"))
       }
 
       let field_rust_type = field.r#type.to_rust_sea_orm_type();
@@ -146,17 +150,19 @@ fn transpile_sea_orm_postgresql(ast: analyzer::SematicSchemaBlock) -> Result<Str
 
     let enum_block = Block::new(1, Some(format!("pub enum {}", name.to_pascal_case())));
 
-    let enum_block = values.into_iter().enumerate().fold(enum_block,|acc, (i, value)| {
+    let enum_block = values.into_iter().fold(enum_block,|acc, value| {
+      let value_name = value.value.to_pascal_case();
+
       acc
-        .line(format!("#[sea_orm(num_value = {})]", i))
-        .line(format!("{},", value.value.to_pascal_case()))
+        .line(format!(r#"#[sea_orm(string_value = "{}")]"#, value_name))
+        .line(format!("{},", value_name))
     });
 
     acc
       .line_skip(1)
-      .line("#[derive(Debug, PartialEq, EnumIter, DeriveActiveEnum)]")
+      .line("#[derive(Clone, Debug, PartialEq, EnumIter, DeriveActiveEnum)]")
       .line(
-        format!(r#"#[sea_orm(rs_type = "i32", db_type = "Integer", enum_name = "{}", schema_name = "{}")]"#, name, schema.unwrap_or("public".into()))
+        format!(r#"#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "{}", schema_name = "{}")]"#, name, schema.unwrap_or("public".into()))
       )
       .block(enum_block)
   });

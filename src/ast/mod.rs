@@ -1,3 +1,7 @@
+use pest::Span;
+use pest::iterators::Pair;
+use crate::parser::Rule;
+
 pub mod enums;
 pub mod indexes;
 pub mod refs;

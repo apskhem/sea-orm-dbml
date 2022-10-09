@@ -16,13 +16,13 @@ pub enum Relation {
 }
 
 impl Relation {
-  pub fn match_type(value: &str) -> Self {
+  pub fn match_type(value: &str) -> Result<Self, ()> {
     match value {
-      "<" => Self::One2One,
-      ">" => Self::One2Many,
-      "-" => Self::Many2One,
-      "<>" => Self::Many2Many,
-      _ => unreachable!("'{:?}' type is not supported!", value),
+      "<" => Ok(Self::One2Many),
+      ">" => Ok(Self::Many2One),
+      "-" => Ok(Self::One2One),
+      "<>" => Ok(Self::Many2Many),
+      _ => Err(()),
     }
   }
 }

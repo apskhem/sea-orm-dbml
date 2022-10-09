@@ -23,7 +23,7 @@ pub fn parse(input: &str) -> ParsingResult<SchemaBlock> {
   for pair in pairs {
     match pair.as_rule() {
       Rule::schema => {
-        return Ok(parse_schema(pair)?);
+        return Ok(parse_schema(pair, input)?);
       },
       _ => throw_rules(&[Rule::schema], pair)?
     }
@@ -32,8 +32,10 @@ pub fn parse(input: &str) -> ParsingResult<SchemaBlock> {
   unreachable!("unhandled parsing error!");
 }
 
-fn parse_schema(pair: Pair<Rule>) -> ParsingResult<SchemaBlock> {
-  pair.into_inner().try_fold(SchemaBlock::default(), |mut acc, p1| {
+fn parse_schema<'a>(pair: Pair<Rule>, input: &'a str) -> ParsingResult<SchemaBlock<'a>> {
+  let init = SchemaBlock::new(&input);
+
+  pair.into_inner().try_fold(init, |mut acc, p1| {
     match p1.as_rule() {
       Rule::project_decl => acc.project = Some(parse_project_decl(p1)?),
       Rule::table_decl => acc.tables.push(parse_table_decl(p1)?),
@@ -327,7 +329,11 @@ fn parse_ref_stmt_inline(pair: Pair<Rule>) -> ParsingResult<RefBlock> {
   pair.into_inner().try_fold(RefBlock::default(), |mut acc, p1| {
     match p1.as_rule() {
       Rule::relation => {
-        acc.rel = Relation::match_type(p1.as_str())
+        acc.rel = if let Ok(rel) = Relation::match_type(p1.as_str()) {
+          rel
+        } else {
+          throw_msg(format!("'{:?}' type is not supported!", p1.as_str()), p1)?
+        }
       },
       Rule::ref_ident => {
         let value = parse_ref_ident(p1)?;

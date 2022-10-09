@@ -1,7 +1,8 @@
 use super::*;
 
-#[derive(Debug, PartialEq, Clone, Default)]
-pub struct SchemaBlock {
+#[derive(Debug, PartialEq, Clone)]
+pub struct SchemaBlock<'a> {
+  pub input: &'a str,
   /// Overall description of the project. This is optional. The file must contain one or zero 'Project' block.
   pub project: Option<project::ProjectBlock>,
   /// Table block.
@@ -14,25 +15,16 @@ pub struct SchemaBlock {
   pub enums: Vec<enums::EnumBlock>
 }
 
-impl SchemaBlock {
-  pub fn get_table(&self, name: &str) {
-    unimplemented!();
-  }
-
-  pub fn get_table_group(&self, name: &str) {
-    unimplemented!();
-  }
-
-  pub fn get_enum(&self, name: &str) {
-    unimplemented!();
-  }
-
-  pub fn get_schema(&self, name: &str) {
-    unimplemented!();
-  }
-
-  pub fn get_block_count(&self) {
-    unimplemented!();
+impl<'a> SchemaBlock<'a> {
+  pub fn new(input: &'a str) -> Self {
+    Self {
+      input,
+      project: Option::default(),
+      tables: Vec::default(),
+      table_groups: Vec::default(),
+      refs: Vec::default(),
+      enums: Vec::default()
+    }
   }
 
   pub fn print(&self) {

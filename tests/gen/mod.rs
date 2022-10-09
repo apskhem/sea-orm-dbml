@@ -8,12 +8,16 @@ pub mod users {
 	#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 	#[sea_orm(table_name = "users", schema_name = "public")]
 	pub struct Model {
-		#[sea_orm(primary_key)]
-		pub id: u32,
-		pub age: u32,
-		pub username: u32,
-		pub role: u32,
-		pub created_at: u32,
+		#[sea_orm(column_type = "Integer", primary_key)]
+		pub id: i32,
+		#[sea_orm(column_type = "Integer")]
+		pub age: i32,
+		#[sea_orm(column_type = "String(None)")]
+		pub username: String,
+		#[sea_orm(column_type = "String(None)")]
+		pub role: String,
+		#[sea_orm(column_type = "DateTime")]
+		pub created_at: DateTime,
 	}
 
 	#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -29,13 +33,17 @@ pub mod posts {
 	#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 	#[sea_orm(table_name = "posts", schema_name = "public")]
 	pub struct Model {
-		#[sea_orm(primary_key)]
-		pub id: u32,
-		pub title: u32,
-		pub body: u32,
-		pub user_id: u32,
-		pub status: u32,
-		pub created_at: u32,
+		#[sea_orm(column_type = "Integer", primary_key)]
+		pub id: i32,
+		#[sea_orm(column_type = "String(None)")]
+		pub title: String,
+		#[sea_orm(column_type = "Text")]
+		pub body: String,
+		#[sea_orm(column_type = "Integer")]
+		pub user_id: i32,
+		pub status: super::PostStatus,
+		#[sea_orm(column_type = "DateTime")]
+		pub created_at: DateTime,
 	}
 
 	#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -51,9 +59,10 @@ pub mod orders {
 	#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 	#[sea_orm(table_name = "orders", schema_name = "public")]
 	pub struct Model {
-		#[sea_orm(primary_key)]
-		pub id: u32,
-		pub status: u32,
+		#[sea_orm(column_type = "Integer", primary_key)]
+		pub id: i32,
+		#[sea_orm(column_type = "String(None)")]
+		pub status: String,
 	}
 
 	#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -63,13 +72,13 @@ pub mod orders {
 	impl ActiveModelBehavior for ActiveModel {}
 }
 
-#[derive(Debug, PartialEq, EnumIter, DeriveActiveEnum)]
-#[sea_orm(rs_type = "i32", db_type = "Integer", enum_name = "post_status", schema_name = "public")]
+#[derive(Clone, Debug, PartialEq, EnumIter, DeriveActiveEnum)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "post_status", schema_name = "public")]
 pub enum PostStatus {
-	#[sea_orm(num_value = 0)]
+	#[sea_orm(string_value = "Draft")]
 	Draft,
-	#[sea_orm(num_value = 1)]
+	#[sea_orm(string_value = "Published")]
 	Published,
-	#[sea_orm(num_value = 2)]
+	#[sea_orm(string_value = "Private")]
 	Private,
 }

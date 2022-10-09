@@ -1,16 +1,9 @@
-use std::collections::{HashSet, HashMap};
-
 use crate::DEFAULT_SCHEMA;
 use crate::ast::*;
 
-mod err;
 mod block;
-
-#[derive(Debug, PartialEq, Clone, Default)]
-pub struct IndexedSchemaBlock {
-  table_map: HashMap<String, HashSet<String>>,
-  enum_map: HashMap<String, HashSet<String>>
-}
+mod err;
+mod indexer;
 
 #[derive(Debug, PartialEq, Clone, Default)]
 pub struct SematicSchemaBlock {
@@ -24,17 +17,14 @@ pub struct SematicSchemaBlock {
   pub refs: Vec<block::IndexedRefBlock>,
   /// Enums block.
   pub enums: Vec<enums::EnumBlock>,
-  /// Indexed table groups map.
-  pub table_group_map: HashMap<String, HashSet<(Option<String>, String)>>,
-  /// Indexed schema map.
-  pub schema_map: HashMap<String, IndexedSchemaBlock>,
-  /// Indexed alias map.
-  pub alias_map: HashMap<String, (Option<String>, String)>
+  /// Identifier and alias indexer.
+  pub indexer: indexer::Indexer,
 }
 
-impl schema::SchemaBlock {
+impl schema::SchemaBlock<'_> {
   pub fn analyze(self) -> SematicSchemaBlock {
     let Self {
+      input,
       project,
       tables,
       table_groups,
@@ -50,38 +40,16 @@ impl schema::SchemaBlock {
     }
 
     // collect tables
-    let mut indexed_refs: Vec<block::IndexedRefBlock> = refs.into_iter().map(block::IndexedRefBlock::from).collect();
-    let mut table_group_map = HashMap::new();
-    let mut schema_map = HashMap::<String, IndexedSchemaBlock>::new();
-    let mut alias_map = HashMap::new();
+    let mut indexer = indexer::Indexer::default();
+    let mut indexed_refs: Vec<_> = refs.into_iter().map(block::IndexedRefBlock::from).collect();
+    
+    indexer.index_table(&tables);
+    indexer.index_enums(&enums);
+    indexer.index_table_groups(&table_groups);
 
+    // collect refs
     for table in tables.iter() {
-      let table::TableIdent {
-        schema,
-        name,
-        alias
-      } = table.ident.clone();
-
-      let schema_name = schema.clone().unwrap_or_else(|| DEFAULT_SCHEMA.into());
-      let mut col_sets = HashSet::new();
-
-      let mut is_pk_passed = false;
       for col in table.cols.iter() {
-        if col.settings.is_pk {
-          if is_pk_passed {
-            panic!("pk_dup");
-          } else {
-            is_pk_passed = true;
-          }
-
-          if col.settings.is_nullable {
-            panic!("nullable_pk");
-          }
-          if col.settings.is_array {
-            panic!("array_pk");
-          }
-        }
-
         let indexed_ref = block::IndexedRefBlock::from_inline(
           col.settings.refs.clone(),
           table.ident.clone(),
@@ -89,97 +57,113 @@ impl schema::SchemaBlock {
         );
 
         indexed_refs.extend(indexed_ref);
-
-        if let Some(dup_col_name) = col_sets.get(&col.name) {
-          panic!("col_name_dup");
-        } else {
-          col_sets.insert(col.name.clone());
-        }
       }
+    }
 
-      if let Some(index_block) = schema_map.get_mut(&schema_name) {
-        index_block.table_map.insert(name.clone(), col_sets);
+    // validate table type
+    let tables = tables.into_iter().map(|table| {
+      let cols = table.cols.into_iter().map(|col| {
+        let r#type = col.r#type;
 
-        if let Some(alias) = alias {
-          if let Some(dup_alias) = alias_map.get(&alias) {
-            panic!("alias_name_dup");
+        if r#type == table::ColumnType::Undef {
+          panic!("undef_table_field")
+        }
+
+        let r#type = if let table::ColumnType::Raw(raw) = r#type {
+          if let Ok(valid) = table::ColumnType::match_type(&raw) {
+            if col.args.is_empty() {
+              valid
+            } else {
+              // validate args (if has)
+              match valid {
+                table::ColumnType::VarChar | table::ColumnType::Char => {
+                  if col.args.len() != 1 {
+                    panic!("varchar_incompatible_args")
+                  }
+
+                  col.args.iter().fold(valid, |acc, arg| {
+                    if let table::Value::Integer(_) = arg {
+                      acc
+                    } else {
+                      panic!("varchar_args_is_not_integer")
+                    }
+                  })
+                },
+                table::ColumnType::Decimal => {
+                  if col.args.len() != 2 {
+                    panic!("decimal_incompatible_args")
+                  }
+
+                  col.args.iter().fold(valid, |acc, arg| {
+                    if let table::Value::Integer(_) = arg {
+                      acc
+                    } else {
+                      panic!("decimal_args_is_not_integer")
+                    }
+                  })
+                },
+                _ => panic!("invalid args usage")
+              }
+            }
           } else {
-            alias_map.insert(alias.clone(), (schema.clone(), name.clone()));
+            // FIXME: add support for default enum value
+            // let values = if let Some(v) = col.settings.default { vec![v] } else { vec![] };
+            // TODO: add support for enum with schema
+            if let Err(msg) = indexer.lookup_enum_values(&None, &raw, &vec![]) {
+              panic!("{}", msg)
+            } else {
+              table::ColumnType::Enum(raw)
+            }
           }
-        }
-      } else {
-        let mut index_block = IndexedSchemaBlock::default();
-
-        index_block.table_map.insert(name.clone(), col_sets);
-
-        if let Some(alias) = alias {
-          alias_map.insert(alias.clone(), (schema.clone(), name.clone()));
-        }
-
-        schema_map.insert(schema_name, index_block);
-      }
-    }
-
-    // collect enums
-    for r#enum in enums.iter() {
-      let enums::EnumIdent {
-        schema,
-        name,
-      } = r#enum.ident.clone();
-
-      let schema_name = schema.clone().unwrap_or_else(|| DEFAULT_SCHEMA.into());
-      let mut value_sets = HashSet::new();
-
-      for value in r#enum.values.iter() {
-        if let Some(dup_col_name) = value_sets.get(&value.value) {
-          panic!("val_dup");
         } else {
-          value_sets.insert(value.value.clone());
-        }
-      }
-
-      if let Some(index_block) = schema_map.get_mut(&schema_name) {
-        index_block.enum_map.insert(name.clone(), value_sets);
-      } else {
-        let mut index_block = IndexedSchemaBlock::default();
-
-        index_block.enum_map.insert(name.clone(), value_sets);
-
-        schema_map.insert(schema_name, index_block);
-      }
-    }
-
-    // collect table_group
-    for table_group in table_groups.clone().into_iter() {
-      for table in table_group.table_idents.into_iter() {
-        let schema_name = table.schema.unwrap_or_else(|| DEFAULT_SCHEMA.into());
-        let ident_alias = table.ident_alias;
-
-        let ident = if let Some(ident) = alias_map.get(&ident_alias) {
-          if !schema_name.eq("public") {
-            panic!("alias_must_not_followed_by_schema")
-          }
-
-          ident.1.clone()
-        } else {
-          ident_alias
+          panic!("preprecessing_type_is_not_raw")
         };
+        
+        table::TableColumn {
+          r#type,
+          ..col
+        }
+      }).collect();
 
-        if let Some(index_block) = schema_map.get(&schema_name) {
-          if !index_block.table_map.contains_key(&ident) {
-            panic!("table_not_found");
-          }
-        } else {
-          panic!("schema_not_found");
+      table::TableBlock {
+        cols,
+        ..table
+      }
+    }).collect();
+
+    // validate ref
+    for indexed_ref in indexed_refs.clone().into_iter() {
+      match indexed_ref.rel {
+        refs::Relation::One2Many => panic!("one-to-many relation is unsupported"),
+        refs::Relation::Many2Many => panic!("many-to-many relation is unsupported"),
+        _ => ()
+      }
+
+      if let Err(msg) = indexed_ref.validate_ref_type(&tables, &indexer) {
+        panic!("{}", msg)
+      }
+
+      for r in indexed_refs.iter() {
+        if r.lhs.compositions.len() != 1 || r.rhs.compositions.len() != 1 {
+          panic!("composite reference is unsupported")
+        }
+        if r.lhs.compositions.len() != r.rhs.compositions.len() {
+          panic!("composite reference must have the same length")
         }
       }
 
-      // TODO: add table inside table_group
-      table_group_map.insert(table_group.name.clone(), HashSet::new());
-    }
+      let count = indexed_refs.iter().fold(0, |acc, other_indexed_ref| {
+        if indexed_ref.is_same_lhs_as(&other_indexed_ref, &indexer) {
+          acc + 1
+        } else {
+          acc
+        }
+      });
 
-    println!("schema: {:?}\n", &schema_map);
-    println!("indexed_refs: {:?}", &indexed_refs);
+      if count != 1 {
+        panic!("dedup_relation_decl")
+      }
+    }
 
     SematicSchemaBlock {
       project,
@@ -187,9 +171,7 @@ impl schema::SchemaBlock {
       table_groups,
       refs: indexed_refs,
       enums,
-      table_group_map,
-      schema_map,
-      alias_map
+      indexer,
     }
   }
 }
