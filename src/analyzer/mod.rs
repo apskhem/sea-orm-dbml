@@ -21,6 +21,30 @@ pub struct SematicSchemaBlock {
   pub indexer: indexer::Indexer,
 }
 
+impl SematicSchemaBlock {
+  /// Gets a table block's relation (ref to, ref by).
+  pub fn get_table_refs(&self, table_ident: &table::TableIdent) -> (Vec<block::IndexedRefBlock>, Vec<block::IndexedRefBlock>) {
+    let mut ref_to_blocks = vec![];
+    let mut ref_by_blocks = vec![];
+
+    for ref_block in self.refs.iter() {
+      let lhs_ident = self.indexer.refer_ref_alias(&ref_block.lhs);
+      let rhs_ident = self.indexer.refer_ref_alias(&ref_block.rhs);
+
+      // TODO: handle self reference relation
+
+      if table_ident.schema == lhs_ident.schema && table_ident.name == lhs_ident.table {
+        ref_to_blocks.push(ref_block.clone())
+      }
+      if table_ident.schema == rhs_ident.schema && table_ident.name == rhs_ident.table {
+        ref_by_blocks.push(ref_block.clone())
+      }
+    }
+
+    (ref_to_blocks, ref_by_blocks)
+  }
+}
+
 impl schema::SchemaBlock<'_> {
   pub fn analyze(self) -> SematicSchemaBlock {
     let Self {

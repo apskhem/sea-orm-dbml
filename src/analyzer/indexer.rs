@@ -200,4 +200,16 @@ impl Indexer {
   pub fn refer_alias(&self, table_alias: &String) -> Option<&(Option<String>, String)> {
     self.alias_map.get(table_alias)
   }
+
+  pub fn refer_ref_alias(&self, ident: &refs::RefIdent) -> refs::RefIdent {
+    if let Some((schema, table)) = self.refer_alias(&ident.table) {
+      refs::RefIdent {
+        schema: schema.clone(),
+        table: table.clone(),
+        compositions: ident.compositions.clone()
+      }
+    } else {
+      ident.clone()
+    }
+  }
 }

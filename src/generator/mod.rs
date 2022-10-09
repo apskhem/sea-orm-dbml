@@ -42,6 +42,12 @@ impl Codegen {
 
     self
   }
+
+  pub fn block_vec(mut self, block_vec: Vec<Block>) -> Self {
+    self.root_block = self.root_block.block_vec(block_vec);
+
+    self
+  }
 }
 
 impl ToString for Codegen {
@@ -124,6 +130,15 @@ impl Block {
 
     self
   }
+
+  /// Inserts a vector of blocks to the scope.
+  pub fn block_vec(mut self, block_vec: Vec<Block>) -> Self {
+    for block in block_vec.into_iter() {
+      self.content = format!("{}\n{}\n", self.content, block.to_string());
+    }
+
+    self
+  }
 }
 
 impl ToString for Block {
@@ -139,9 +154,13 @@ impl ToString for Block {
         format!("{}{}", block_indent, "{")
       };
 
-      let lower_block = format!("{}{}", block_indent, "}");
+      if self.content.is_empty() {
+        format!("{}{}", upper_block, "}")
+      } else {
+        let lower_block = format!("{}{}", block_indent, "}");
 
-      format!("{}\n{}{}", upper_block, self.content.clone(), lower_block)
+        format!("{}\n{}{}", upper_block, self.content.clone(), lower_block)
+      }
     };
     
     out

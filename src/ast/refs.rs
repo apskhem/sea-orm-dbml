@@ -56,6 +56,18 @@ impl RelationAction {
   }
 }
 
+impl ToString for RelationAction {
+  fn to_string(&self) -> String {
+    match self {
+      Self::NoAction => format!("no action"),
+      Self::Cascade => format!("cascade"),
+      Self::Restrict => format!("restrict"),
+      Self::SetNull => format!("set null"),
+      Self::SetDefault => format!("set default"),
+    }
+  }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Default)]
 pub struct RelationSettings {
   pub on_delete: Option<RelationAction>,

@@ -80,21 +80,19 @@ fn transpile_sea_orm_postgresql(ast: analyzer::SematicSchemaBlock) -> Result<Str
     .line_skip(1)
     .line("use sea_orm::entity::prelude::*;");
 
-  let codegen = ast.tables.into_iter().fold(codegen, |acc, table| {
+  let codegen = ast.tables.iter().fold(codegen, |acc, table| {
     let table::TableBlock {
-      ident: table::TableIdent {
-        name,
-        schema,
-        ..
-      },
+      ident,
       cols: fields,
       indexes,
       ..
-    } = table;
+    } = table.clone();
 
     let table_block = Block::new(2, Some("pub struct Model"));
     let rel_block = Block::new(2, Some("pub enum Relation"));
+    let mut rel_entity_blocks: Vec<_> = vec![];
 
+    // field listing
     let table_block = fields.into_iter().fold(table_block,|acc, field| {
       let mut out_fields = vec![];
 
@@ -102,7 +100,13 @@ fn transpile_sea_orm_postgresql(ast: analyzer::SematicSchemaBlock) -> Result<Str
         out_fields.push(format!(r#"column_type = "{}""#, exp_type))
       }
       if field.settings.is_pk {
-        out_fields.push(format!("primary_key"))
+        out_fields.push(format!("primary_key"));
+
+        // TODO: add primary as foreign key
+
+        if !field.settings.is_incremental {
+          out_fields.push(format!("auto_increment = false"))
+        }
       }
       if field.settings.is_nullable {
         out_fields.push(format!("nullable"))
@@ -120,15 +124,89 @@ fn transpile_sea_orm_postgresql(ast: analyzer::SematicSchemaBlock) -> Result<Str
         .line(format!("pub {}: {},", field.name, field_string))
     });
 
-    let mod_block = Block::new(1, Some(format!("pub mod {}", name)))
+    // relation listing
+    // FIXME: watch for self referencing vec
+    let (rto_vec, rby_vec) = ast.get_table_refs(&ident);
+
+    let rel_block = rto_vec.into_iter().fold(rel_block, |acc, rto| {
+      let ref_field_pascal = rto.lhs.compositions.get(0).unwrap().to_pascal_case();
+      let name_pascal = rto.rhs.table.to_pascal_case();
+      let name_snake = rto.rhs.table.to_snake_case();
+
+      let derive = match rto.rel {
+        refs::Relation::One2One
+        | refs::Relation::Many2One => {
+          let mut attrs = vec![
+            format!(r#"belongs_to = "super::{}::Entity""#, name_snake),
+            format!(r#"from = "Column::{}""#, ref_field_pascal),
+            format!(r#"to = "super::{}::Column::Id""#, name_snake),
+          ];
+
+          if let Some(settings) = rto.settings {
+            if let Some(action) = settings.on_delete {
+              attrs.push(format!(r#"on_delete = "{}""#, action.to_string().to_pascal_case()))
+            }
+            if let Some(action) = settings.on_update {
+              attrs.push(format!(r#"on_update = "{}""#, action.to_string().to_pascal_case()))
+            }
+          }
+
+          format!(r#"#[sea_orm({})]"#, attrs.join(", "))
+        },
+        _ => panic!("unsupported_rel")
+      };
+
+      rel_entity_blocks.push(
+        Block::new(2, Some(format!("impl Related<super::{}::Entity> for Entity", name_snake)))
+          .block(
+            Block::new(3, Some("fn to() -> RelationDef"))
+              .line(format!("Relation::{}.def()", name_pascal))
+          )
+      );
+
+      acc
+        .line(derive)
+        .line(name_pascal)
+    });
+
+    let rel_block = rby_vec.into_iter().fold(rel_block, |acc, rby| {
+      let name_pascal = rby.lhs.table.to_pascal_case();
+      let name_snake = rby.lhs.table.to_snake_case();
+
+      let derive = match rby.rel {
+        refs::Relation::One2One => {
+          format!(r#"#[sea_orm(has_one = "super::{}::Entity")]"#, name_snake)
+        },
+        refs::Relation::Many2One => {
+          format!(r#"#[sea_orm(has_many = "super::{}::Entity")]"#, name_snake)
+        },
+        _ => panic!("unsupported_rel")
+      };
+      
+      rel_entity_blocks.push(
+        Block::new(2, Some(format!("impl Related<super::{}::Entity> for Entity", name_snake)))
+          .block(
+            Block::new(3, Some("fn to() -> RelationDef"))
+              .line(format!("Relation::{}.def()", name_pascal))
+          )
+      );
+
+      acc
+        .line(derive)
+        .line(name_pascal)
+    });
+
+    // construct mod block
+    let mod_block = Block::new(1, Some(format!("pub mod {}", &ident.name)))
       .line("use sea_orm::entity::prelude::*;")
       .line_skip(1)
       .line(format!("#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]"))
-      .line(format!(r#"#[sea_orm(table_name = "{}", schema_name = "{}")]"#, name, schema.unwrap_or_else(|| "public".into())))
+      .line(format!(r#"#[sea_orm(table_name = "{}", schema_name = "{}")]"#, &ident.name, &ident.schema.unwrap_or_else(|| "public".into())))
       .block(table_block)
       .line_skip(1)
       .line("#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]")
       .block(rel_block)
+      .block_vec(rel_entity_blocks)
       .line_skip(1)
       .line("impl ActiveModelBehavior for ActiveModel {}");
 

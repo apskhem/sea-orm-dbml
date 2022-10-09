@@ -1,10 +1,6 @@
-use std::collections::HashMap;
-
 use crate::ast::*;
-use crate::DEFAULT_SCHEMA;
 
 use super::indexer;
-use super::indexer::IndexedSchemaBlock;
 
 /// A validated reference block.
 #[derive(Debug, PartialEq, Eq, Clone, Default)]
@@ -50,20 +46,8 @@ impl IndexedRefBlock {
     tables: &Vec<table::TableBlock>,
     indexer: &indexer::Indexer
   ) -> Result<(), String> {
-    let refer_alias = |ident: &refs::RefIdent, indexer: &indexer::Indexer| {
-      if let Some((schema, table)) = indexer.refer_alias(&ident.table) {
-        refs::RefIdent {
-          schema: schema.clone(),
-          table: table.clone(),
-          compositions: ident.compositions.clone()
-        }
-      } else {
-        ident.clone()
-      }
-    };
-
-    let lhs_ident = refer_alias(&self.lhs, indexer);
-    let rhs_ident = refer_alias(&self.rhs, indexer);
+    let lhs_ident = indexer.refer_ref_alias(&self.lhs);
+    let rhs_ident = indexer.refer_ref_alias(&self.rhs);
 
     indexer.lookup_table_fields(&lhs_ident.schema, &lhs_ident.table, &lhs_ident.compositions)?;
     indexer.lookup_table_fields(&rhs_ident.schema, &rhs_ident.table, &rhs_ident.compositions)?;
@@ -91,20 +75,8 @@ impl IndexedRefBlock {
   }
 
   pub fn is_same_lhs_as(&self, other: &Self, indexer: &indexer::Indexer) -> bool {
-    let refer_alias = |ident: &refs::RefIdent, indexer: &indexer::Indexer| {
-      if let Some((schema, table)) = indexer.refer_alias(&ident.table) {
-        refs::RefIdent {
-          schema: schema.clone(),
-          table: table.clone(),
-          compositions: ident.compositions.clone()
-        }
-      } else {
-        ident.clone()
-      }
-    };
-
-    let self_ident = refer_alias(&self.lhs, indexer);
-    let other_ident = refer_alias(&other.lhs, indexer);
+    let self_ident = indexer.refer_ref_alias(&self.lhs);
+    let other_ident = indexer.refer_ref_alias(&other.lhs);
 
     self_ident == other_ident
   }
