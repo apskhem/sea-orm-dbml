@@ -141,9 +141,9 @@ fn parse_table_col(pair: Pair<Rule>) -> ParsingResult<TableColumn> {
         acc.name = parse_ident(p1)?
       },
       Rule::col_type => {
-        let (col_type, col_args, is_array) = parse_col_type(p1)?;
+        let (col_type, col_args, col_arrays) = parse_col_type(p1)?;
 
-        acc.settings.is_array = is_array;
+        acc.arrays = col_arrays;
         acc.args = col_args;
         acc.r#type = col_type;
       },
@@ -157,36 +157,51 @@ fn parse_table_col(pair: Pair<Rule>) -> ParsingResult<TableColumn> {
   })
 }
 
-fn parse_col_type(pair: Pair<Rule>) -> ParsingResult<(ColumnType, Vec<Value>, bool)> {
-  let mut is_array = false;
+fn parse_col_type(pair: Pair<Rule>) -> ParsingResult<(ColumnTypeName, Vec<Value>, Vec<Option<usize>>)> {
   let mut col_args = vec![];
-  let mut col_type = ColumnType::Undef;
+  let mut col_arrays = vec![];
+  let mut col_type = ColumnTypeName::Undef;
 
   for p1 in pair.into_inner() {
     match p1.as_rule() {
-      Rule::col_type_single | Rule::col_type_array => {
-        is_array = p1.as_rule() == Rule::col_type_array;
-
+      Rule::col_type_quoted | Rule::col_type_unquoted => {
         for p2 in p1.into_inner() {
           match p2.as_rule() {
             Rule::var => {
-              col_type = ColumnType::Raw(p2.as_str().to_string())
+              col_type = ColumnTypeName::Raw(p2.as_str().to_string())
             },
             Rule::double_quoted_value => {
-              col_type = ColumnType::Raw(p2.as_str().to_string())
+              col_type = ColumnTypeName::Raw(p2.as_str().to_string())
             },
             Rule::col_type_arg => {
               col_args = parse_col_type_arg(p2)?
+            },
+            Rule::col_type_array => {
+              let val = p2.into_inner().try_fold(None, |acc, p3| {
+                match p3.as_rule() {
+                  Rule::integer => {
+                    let val = match p3.as_str().parse::<usize>() {
+                      Ok(val) => Some(val),
+                      _ => throw_msg("cannot parse the value into usize", p3)?
+                    };
+
+                    Ok(val)
+                  },
+                  _ => throw_rules(&[Rule::integer], p3)?
+                }
+              })?;
+
+              col_arrays.push(val)
             },
             _ => throw_rules(&[Rule::var, Rule::col_type_arg], p2)?,
           }
         }
       },
-      _ => throw_rules(&[Rule::col_type_single], p1)?,
+      _ => throw_rules(&[Rule::col_type_quoted, Rule::col_type_unquoted], p1)?,
     }
   }
 
-  Ok((col_type, col_args, is_array))
+  Ok((col_type, col_args, col_arrays))
 }
 
 fn parse_col_type_arg(pair: Pair<Rule>) -> ParsingResult<Vec<Value>> {
@@ -562,7 +577,7 @@ fn parse_indexes_settings(pair: Pair<Rule>) -> ParsingResult<IndexesSettings> {
             },
             Rule::indexes_name => {
               p2.into_inner().try_for_each(|p3| {
-                acc.name = Some(parse_string_value(p3)?);
+                acc.name = Some(p3.into_inner().as_str().to_string());
 
                 Ok(())
               })?

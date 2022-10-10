@@ -15,7 +15,7 @@ Table users {
   username varchar
   role varchar
   created_at timestamp
-  referral_id integer [ref: > users.id]
+  referral_id integer [ref: > users.id, null]
 }
 
 Table posts as P {
@@ -39,7 +39,7 @@ Table orders {
 
   // indexes {
   //   (id, country) [pk] // composite primary key
-  //   created_at [name: 'created_at_index', note: 'Date']
+  //   created_at [name: "created_at_index", note: 'Date']
   //   booking_date
   //   (country, booking_date) [type: btree, unique]
   //   booking_date [type: hash]

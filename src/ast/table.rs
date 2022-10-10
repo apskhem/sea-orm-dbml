@@ -12,11 +12,19 @@ pub struct TableBlock {
 }
 
 #[derive(Debug, PartialEq, Clone, Default)]
+pub struct ColumnType {
+  pub type_name: ColumnTypeName,
+  pub args: Vec<Value>,
+  pub arrays: Vec<Option<usize>>,
+}
+
+#[derive(Debug, PartialEq, Clone, Default)]
 pub struct TableColumn {
   pub span_range: Range<usize>,
   pub name: String,
-  pub r#type: ColumnType,
+  pub r#type: ColumnTypeName,
   pub args: Vec<Value>,
+  pub arrays: Vec<Option<usize>>,
   pub settings: ColumnSettings,
 }
 
@@ -33,7 +41,6 @@ pub enum Value {
 
 impl ToString for Value {
   fn to_string(&self) -> String {
-    // FIXME: to be more precise
     match self {
       Self::String(val) => format!("{}", val),
       Self::Integer(val) => format!("{}", val),
@@ -47,7 +54,7 @@ impl ToString for Value {
 }
 
 #[derive(Debug, PartialEq, Clone, Default)]
-pub enum ColumnType {
+pub enum ColumnTypeName {
   /// The initial value (default)
   #[default] Undef,
   /// The type is waiting to be parsed and validated.
@@ -72,7 +79,7 @@ pub enum ColumnType {
   Decimal
 }
 
-impl ColumnType {
+impl ColumnTypeName {
   pub fn match_type(value: &str) -> Result<Self, ()> {
     match value {
       "char" => Ok(Self::Char),
@@ -143,7 +150,6 @@ pub struct ColumnSettings {
   pub is_unique: bool,
   pub is_nullable: bool,
   pub is_incremental: bool,
-  pub is_array: bool,
   pub note: Option<String>,
   pub default: Option<Value>,
   pub refs: Vec<refs::RefBlock>

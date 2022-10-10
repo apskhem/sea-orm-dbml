@@ -97,18 +97,18 @@ impl schema::SchemaBlock<'_> {
       let cols = table.cols.into_iter().map(|col| {
         let r#type = col.r#type;
 
-        if r#type == table::ColumnType::Undef {
+        if r#type == table::ColumnTypeName::Undef {
           panic!("undef_table_field")
         }
 
-        let r#type = if let table::ColumnType::Raw(raw) = r#type {
-          if let Ok(valid) = table::ColumnType::match_type(&raw) {
+        let r#type = if let table::ColumnTypeName::Raw(raw) = r#type {
+          if let Ok(valid) = table::ColumnTypeName::match_type(&raw) {
             if col.args.is_empty() {
               valid
             } else {
               // validate args (if has)
               match valid {
-                table::ColumnType::VarChar | table::ColumnType::Char => {
+                table::ColumnTypeName::VarChar | table::ColumnTypeName::Char => {
                   if col.args.len() != 1 {
                     panic!("varchar_incompatible_args")
                   }
@@ -121,7 +121,7 @@ impl schema::SchemaBlock<'_> {
                     }
                   })
                 },
-                table::ColumnType::Decimal => {
+                table::ColumnTypeName::Decimal => {
                   if col.args.len() != 2 {
                     panic!("decimal_incompatible_args")
                   }
@@ -138,13 +138,17 @@ impl schema::SchemaBlock<'_> {
               }
             }
           } else {
-            // FIXME: add support for default enum value
-            // let values = if let Some(v) = col.settings.default { vec![v] } else { vec![] };
+            let default = if let Some(default) = &col.settings.default {
+              vec![default.to_string()]
+            } else {
+              vec![]
+            };
+
             // TODO: add support for enum with schema
-            if let Err(msg) = indexer.lookup_enum_values(&None, &raw, &vec![]) {
+            if let Err(msg) = indexer.lookup_enum_values(&None, &raw, &default) {
               panic!("{}", msg)
             } else {
-              table::ColumnType::Enum(raw)
+              table::ColumnTypeName::Enum(raw)
             }
           }
         } else {
@@ -185,7 +189,7 @@ impl schema::SchemaBlock<'_> {
       }
 
       let count = indexed_refs.iter().fold(0, |acc, other_indexed_ref| {
-        if indexed_ref.is_same_lhs_as(&other_indexed_ref, &indexer) {
+        if indexed_ref.eq_lhs(&other_indexed_ref, &indexer) {
           acc + 1
         } else {
           acc

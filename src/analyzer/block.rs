@@ -74,7 +74,7 @@ impl IndexedRefBlock {
     Ok(())
   }
 
-  pub fn is_same_lhs_as(&self, other: &Self, indexer: &indexer::Indexer) -> bool {
+  pub fn eq_lhs(&self, other: &Self, indexer: &indexer::Indexer) -> bool {
     let self_ident = indexer.refer_ref_alias(&self.lhs);
     let other_ident = indexer.refer_ref_alias(&other.lhs);
 

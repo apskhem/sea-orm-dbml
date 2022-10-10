@@ -6,7 +6,7 @@ pub trait ToProgType {
   fn to_rust_sea_orm_type(&self) -> String;
 }
 
-impl ToProgType for table::ColumnType {
+impl ToProgType for table::ColumnTypeName {
   fn to_rust_sea_orm_type(&self) -> String {
     match self {
       Self::Enum(name) => format!("super::{}", name.to_pascal_case()),

@@ -43,7 +43,7 @@ impl Indexer {
           if col.settings.is_nullable {
             panic!("nullable_pk");
           }
-          if col.settings.is_array {
+          if !col.arrays.is_empty() {
             panic!("array_pk");
           }
         }

@@ -10,7 +10,7 @@ pub mod users {
 	pub struct Model {
 		#[sea_orm(column_type = "Integer", primary_key, auto_increment = false)]
 		pub id: i32,
-		#[sea_orm(column_type = "Integer")]
+		#[sea_orm(column_type = "Integer", default_value = 10)]
 		pub age: i32,
 		#[sea_orm(column_type = "String(None)")]
 		pub username: String,
@@ -18,8 +18,8 @@ pub mod users {
 		pub role: String,
 		#[sea_orm(column_type = "DateTime")]
 		pub created_at: DateTime,
-		#[sea_orm(column_type = "Integer")]
-		pub referral_id: i32,
+		#[sea_orm(column_type = "Integer", nullable)]
+		pub referral_id: Option<i32>,
 	}
 
 	#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -105,10 +105,10 @@ pub mod orders {
 #[derive(Clone, Debug, PartialEq, EnumIter, DeriveActiveEnum)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "post_status", schema_name = "public")]
 pub enum PostStatus {
-	#[sea_orm(string_value = "Draft")]
+	#[sea_orm(string_value = "draft")]
 	Draft,
-	#[sea_orm(string_value = "Published")]
+	#[sea_orm(string_value = "published")]
 	Published,
-	#[sea_orm(string_value = "Private")]
+	#[sea_orm(string_value = "private")]
 	Private,
 }

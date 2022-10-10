@@ -60,7 +60,7 @@ The tool aims to support various types of ORM not only in Rust.
 
 | ORM Entity | Platform |        Progress        | Version |
 |------------|----------|------------------------|---------|
-| SeaORM     | Rust     | Working in progress... | v0.9    |
+| SeaORM     | Rust     | Partailly Worked.      | v0.9    |
 | Diesel     | Rust     | Observed.              | v2      |
 | TypeORM    | Node     | Observed.              | v0.3    |
 | Prisma     | Node     | Observed.              | v4      |

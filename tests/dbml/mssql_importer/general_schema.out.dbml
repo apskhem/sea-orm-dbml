@@ -1,31 +1,21 @@
-Project ecommerce {
-  note: '''
-    # Introduction
-    This is an ecommerce project
-
-    # Description
-    ...
-  '''
-  database_type: 'PostgreSQL'
-}
-
-Enum "orders_status" {
+Enum "orders_status_enum" {
   "created"
   "running"
   "done"
   "failure"
 }
 
-Enum "product status" {
+Enum "products_status_enum" {
   "Out of Stock"
   "In Stock"
 }
 
-Table "orders" [headercolor: #fff] {
+Table "orders" {
   "id" int [pk, increment]
   "user_id" int [unique, not null]
-  "status" orders_status
-  "created_at" varchar
+  "status" orders_status_enum [not null]
+  "created_at" varchar(255) [note: 'When order created']
+  Note: 'This is a note in table "orders"'
 }
 
 Table "order_items" {
@@ -36,51 +26,40 @@ Table "order_items" {
 
 Table "products" {
   "id" int [pk]
-  "name" varchar
+  "name" varchar(255)
   "merchant_id" int [not null]
   "price" int
-  "status" "product status"
+  "status" products_status_enum [not null]
   "created_at" datetime [default: `now()`]
 
-        
 Indexes {
   (merchant_id, status) [name: "product_status"]
-  id [type: hash, unique]
+  id [unique, name: "products_index_1"]
 }
 }
 
 Table "users" {
   "id" int [pk]
-  "full_name" varchar
-  "email" varchar [unique]
-  "gender" varchar
-  "date_of_birth" varchar
-  "created_at" varchar
+  "full_name" varchar(255)
+  "email" varchar(255) [unique]
+  "gender" varchar(255)
+  "date_of_birth" varchar(255)
+  "created_at" varchar(255)
   "country_code" int
-}
-
-TableGroup g1 {
-  users
-  merchants
-}
-
-TableGroup g2 {
-  countries
-  orders
 }
 
 Table "merchants" {
   "id" int [pk]
-  "merchant_name" varchar
+  "merchant_name" varchar(255)
   "country_code" int
-  "created_at" varchar
+  "created_at" varchar(255)
   "admin_id" int
 }
 
 Table "countries" {
   "code" int [pk]
-  "name" varchar
-  "continent_name" varchar
+  "name" varchar(255)
+  "continent_name" varchar(255)
 }
 
 Ref:"orders"."id" < "order_items"."order_id"

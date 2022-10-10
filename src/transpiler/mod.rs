@@ -111,6 +111,18 @@ fn transpile_sea_orm_postgresql(ast: analyzer::SematicSchemaBlock) -> Result<Str
       if field.settings.is_nullable {
         out_fields.push(format!("nullable"))
       }
+      if field.settings.is_unique {
+        out_fields.push(format!("unique"))
+      }
+      if let Some(default) = &field.settings.default {
+        let default = if let table::Value::String(val) = default {
+          format!(r#""{}""#, val)
+        } else {
+          default.to_string()
+        };
+
+        out_fields.push(format!(r#"default_value = {}"#, default.to_string()))
+      }
 
       let field_rust_type = field.r#type.to_rust_sea_orm_type();
       let field_string = if field.settings.is_nullable {
@@ -240,7 +252,7 @@ fn transpile_sea_orm_postgresql(ast: analyzer::SematicSchemaBlock) -> Result<Str
     });
 
     // construct mod block
-    let mod_block = Block::new(1, Some(format!("pub mod {}", &ident.name)))
+    let mod_block = Block::new(1, Some(format!("pub mod {}", &ident.name.to_snake_case())))
       .line("use sea_orm::entity::prelude::*;")
       .line_skip(1)
       .line(format!("#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]"))
@@ -270,11 +282,11 @@ fn transpile_sea_orm_postgresql(ast: analyzer::SematicSchemaBlock) -> Result<Str
     let enum_block = Block::new(1, Some(format!("pub enum {}", name.to_pascal_case())));
 
     let enum_block = values.into_iter().fold(enum_block,|acc, value| {
-      let value_name = value.value.to_pascal_case();
+      let value_name = value.value;
 
       acc
         .line(format!(r#"#[sea_orm(string_value = "{}")]"#, value_name))
-        .line(format!("{},", value_name))
+        .line(format!("{},", value_name.to_pascal_case()))
     });
 
     acc
