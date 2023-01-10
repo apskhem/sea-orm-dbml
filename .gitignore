@@ -1,4 +1,5 @@
 /target
 /dist
+/src/main.rs
 
 log.txt
