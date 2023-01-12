@@ -1,15 +1,6 @@
-pub enum DatabaseType {
-  PostgreSQL,
-  Oracle,
-  MySQL,
-  MongoDB,
-  MSSQL,
-  SQLite,
-  MariaDB,
+#[derive(Debug, PartialEq, Clone)]
+pub enum Target {
+  // MySQL,
+  Postgres,
+  // Sqlite
 }
-
-pub const SUPPORTED_SEA_ORM_DB_LIST: &'static [DatabaseType] = &[
-  DatabaseType::PostgreSQL,
-  DatabaseType::MySQL,
-  DatabaseType::SQLite
-];

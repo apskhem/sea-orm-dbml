@@ -10,7 +10,7 @@ Table cake {
 Table vendor {
   id int [pk, increment]
   name varchar
-  fruit_id text [ref: > fruit.id, null]
+  fruit_id int [ref: > fruit.id, null]
 }
 
 Table fruit {

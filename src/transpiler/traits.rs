@@ -2,43 +2,43 @@ use inflector::Inflector;
 
 use dbml_rs::ast::*;
 
-pub trait ToProgType {
-  fn to_rust_sea_orm_type(&self) -> String;
+pub trait ToRustType {
+  fn to_rust_type(&self) -> String;
 }
 
 pub trait ToColType {
-  fn to_col_type(&self, args: &Vec<table::Value>) -> Option<String>;
+  fn to_col_type(&self) -> Option<String>;
 }
 
-impl ToProgType for table::ColumnTypeName {
-  fn to_rust_sea_orm_type(&self) -> String {
-    match self {
-      Self::Enum(name) => format!("super::{}", name.to_pascal_case()),
-      Self::Char => format!("String"),
-      Self::VarChar => format!("String"),
-      Self::SmallInt => format!("i16"),
-      Self::Integer => format!("i32"),
-      Self::BigInt => format!("i64"),
-      Self::Real => format!("f32"),
-      Self::DoublePrecision => format!("f64"),
-      Self::Bool => format!("bool"),
-      Self::ByteArray => format!("Vec<u8>"),
-      Self::Date => format!("Date"),
-      Self::Text => format!("String"),
-      Self::Time => format!("Time"),
-      Self::Timestamp => format!("DateTime"),
-      Self::Timestampz => format!("DateTimeWithTimeZone"),
-      Self::Uuid => format!("Uuid"),
-      Self::Json => format!("Json"),
-      Self::Decimal => format!("Decimal"),
+impl ToRustType for table::ColumnType {
+  fn to_rust_type(&self) -> String {
+    match &self.type_name {
+      table::ColumnTypeName::Enum(name) => format!("super::{}", name.to_pascal_case()),
+      table::ColumnTypeName::Char => format!("String"),
+      table::ColumnTypeName::VarChar => format!("String"),
+      table::ColumnTypeName::SmallInt => format!("i16"),
+      table::ColumnTypeName::Integer => format!("i32"),
+      table::ColumnTypeName::BigInt => format!("i64"),
+      table::ColumnTypeName::Real => format!("f32"),
+      table::ColumnTypeName::DoublePrecision => format!("f64"),
+      table::ColumnTypeName::Bool => format!("bool"),
+      table::ColumnTypeName::ByteArray => format!("Vec<u8>"),
+      table::ColumnTypeName::Date => format!("Date"),
+      table::ColumnTypeName::Text => format!("String"),
+      table::ColumnTypeName::Time => format!("Time"),
+      table::ColumnTypeName::Timestamp => format!("DateTime"),
+      table::ColumnTypeName::Timestampz => format!("DateTimeWithTimeZone"),
+      table::ColumnTypeName::Uuid => format!("Uuid"),
+      table::ColumnTypeName::Json => format!("Json"),
+      table::ColumnTypeName::Decimal => format!("Decimal"),
       _ => panic!("cannot_format_type_to_seaorm_type")
     }
   }
 }
 
-impl ToColType for table::ColumnTypeName {
-  fn to_col_type(&self, args: &Vec<table::Value>) -> Option<String> {
-    let str_arg_vec: Vec<_> = args.iter().map(|arg| arg.to_string()).collect();
+impl ToColType for table::ColumnType {
+  fn to_col_type(&self) -> Option<String> {
+    let str_arg_vec: Vec<_> = self.args.iter().map(|arg| arg.to_string()).collect();
     let str_arg = if str_arg_vec.len() == 0 {
       format!("None")
     } else if str_arg_vec.len() == 1 {
@@ -47,24 +47,24 @@ impl ToColType for table::ColumnTypeName {
       format!("Some(({}))", str_arg_vec.join(", "))
     };
 
-    match self {
-      Self::Char => Some(format!("Char({})", str_arg)),
-      Self::VarChar => Some(format!("String({})", str_arg)),
-      Self::SmallInt => Some(format!("SmallInteger")),
-      Self::Integer => Some(format!("Integer")),
-      Self::BigInt => Some(format!("BigInteger")),
-      Self::Real => Some(format!("Float")),
-      Self::DoublePrecision => Some(format!("Double")),
-      Self::Bool => Some(format!("Boolean")),
-      Self::ByteArray => Some(format!("Binary")),
-      Self::Date => Some(format!("Date")),
-      Self::Text => Some(format!("Text")),
-      Self::Time => Some(format!("Time")),
-      Self::Timestamp => Some(format!("DateTime")),
-      Self::Timestampz => Some(format!("TimestampWithTimeZone")),
-      Self::Uuid => Some(format!("Uuid")),
-      Self::Json => Some(format!("Json")),
-      Self::Decimal => Some(format!("Decimal({})", str_arg)),
+    match self.type_name {
+      table::ColumnTypeName::Char => Some(format!("Char({})", str_arg)),
+      table::ColumnTypeName::VarChar => Some(format!("String({})", str_arg)),
+      table::ColumnTypeName::SmallInt => Some(format!("SmallInteger")),
+      table::ColumnTypeName::Integer => Some(format!("Integer")),
+      table::ColumnTypeName::BigInt => Some(format!("BigInteger")),
+      table::ColumnTypeName::Real => Some(format!("Float")),
+      table::ColumnTypeName::DoublePrecision => Some(format!("Double")),
+      table::ColumnTypeName::Bool => Some(format!("Boolean")),
+      table::ColumnTypeName::ByteArray => Some(format!("Binary")),
+      table::ColumnTypeName::Date => Some(format!("Date")),
+      table::ColumnTypeName::Text => Some(format!("Text")),
+      table::ColumnTypeName::Time => Some(format!("Time")),
+      table::ColumnTypeName::Timestamp => Some(format!("DateTime")),
+      table::ColumnTypeName::Timestampz => Some(format!("TimestampWithTimeZone")),
+      table::ColumnTypeName::Uuid => Some(format!("Uuid")),
+      table::ColumnTypeName::Json => Some(format!("Json")),
+      table::ColumnTypeName::Decimal => Some(format!("Decimal({})", str_arg)),
       _ => None
     }
   }

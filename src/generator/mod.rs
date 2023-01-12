@@ -1,18 +1,11 @@
 #[derive(Debug, PartialEq, Clone)]
-pub enum TargetLang {
-  Rust
-}
-
-#[derive(Debug, PartialEq, Clone)]
 pub struct Codegen {
-  lang: TargetLang,
   root_block: Block,
 }
 
 impl Codegen {
-  pub fn new(lang: TargetLang) -> Self {
+  pub fn new() -> Self {
     let codegen = Self {
-      lang,
       root_block: Block::root()
     };
 

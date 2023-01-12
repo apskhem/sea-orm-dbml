@@ -1,0 +1,61 @@
+Project sea_orm_codegen {
+  database_type: 'PostgreSQL'
+}
+
+Table bakery {
+  id int [pk, increment]
+  name varchar
+  profit_margin "double precision"
+}
+
+Table customer {
+  id int [pk, increment]
+  name varchar
+  notes text [null]
+}
+
+Table baker {
+  id int [pk, increment]
+  name varchar
+  contact_details json
+  bakery_id int
+}
+
+Ref: baker.bakery_id > bakery.id [delete: cascade, update: cascade]
+
+Table cake {
+  id int [pk, increment]
+  name varchar
+  price numeric(19,4)
+  bakery_id int [ref: > bakery.id]
+  gluten_free boolean
+  serial uuid
+}
+
+Table order {
+  id int [pk, increment]
+  total numeric(19,4)
+  bakery_id int [ref: > bakery.id]
+  customer_id int [ref: > customer.id]
+  placed_at timestamp
+}
+
+Table cakes_bakers {
+  cake_id int
+  baker_id int
+
+  indexes {
+    (cake_id, baker_id) [pk]
+  }
+}
+
+Ref: cakes_bakers.cake_id > cake.id [delete: cascade, update: cascade]
+Ref: cakes_bakers.baker_id > baker.id [delete: cascade, update: cascade]
+
+Table lineitme {
+  id int [pk, increment]
+  price numeric(19,4)
+  quantity integer
+  order_id integer [ref: > order.id]
+  cake_id integer [ref: > cake.id]
+}
