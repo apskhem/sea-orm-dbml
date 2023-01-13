@@ -1,4 +1,4 @@
-Project sea_orm_codegen {
+Project sea_orm_bakery {
   database_type: 'PostgreSQL'
 }
 

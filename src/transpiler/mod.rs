@@ -261,7 +261,7 @@ fn transpile(ast: analyzer::SemanticSchemaBlock, target: &Target) -> Result<Stri
       .line("use sea_orm::entity::prelude::*;")
       .line_skip(1)
       .line(format!("#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]"))
-      .line(format!(r#"#[sea_orm(table_name = "{}", schema_name = "{}")]"#, &ident.name, &ident.schema.unwrap_or_else(|| "public".into())))
+      .line(format!(r#"#[sea_orm(table_name = "{}", schema_name = "{}")]"#, &ident.name, &ident.schema.unwrap_or_else(|| DEFAULT_SCHEMA.into())))
       .block(table_block)
       .line_skip(1)
       .line("#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]")
@@ -298,7 +298,7 @@ fn transpile(ast: analyzer::SemanticSchemaBlock, target: &Target) -> Result<Stri
       .line_skip(1)
       .line("#[derive(Clone, Debug, PartialEq, EnumIter, DeriveActiveEnum)]")
       .line(
-        format!(r#"#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "{}", schema_name = "{}")]"#, name, schema.unwrap_or("public".into()))
+        format!(r#"#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "{}", schema_name = "{}")]"#, name, schema.unwrap_or_else(|| DEFAULT_SCHEMA.into()))
       )
       .block(enum_block)
   });

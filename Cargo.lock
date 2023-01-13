@@ -353,7 +353,7 @@ dependencies = [
 [[package]]
 name = "dbml-rs"
 version = "0.1.0"
-source = "git+https://github.com/apskhem/dbml-rs?branch=main#9b22dad1340fc808393722329c5f5b0225d57bb4"
+source = "git+https://github.com/apskhem/dbml-rs?branch=main#be69c423de3fef50db8c78e8922292f58518fcb8"
 dependencies = [
  "pest",
  "pest_derive",
@@ -1247,9 +1247,9 @@ checksum = "a507befe795404456341dfab10cef66ead4c041f62b8b11bbb92bffe5d0953e0"
 
 [[package]]
 name = "sqlformat"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f87e292b4291f154971a43c3774364e2cbcaec599d3f5bf6fa9d122885dbc38a"
+checksum = "0c12bc9199d1db8234678b7051747c07f517cdcf019262d1847b94ec8b1aee3e"
 dependencies = [
  "itertools",
  "nom",
