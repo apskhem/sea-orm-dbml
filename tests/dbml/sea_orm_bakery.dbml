@@ -52,7 +52,7 @@ Table cakes_bakers {
 Ref: cakes_bakers.cake_id > cake.id [delete: cascade, update: cascade]
 Ref: cakes_bakers.baker_id > baker.id [delete: cascade, update: cascade]
 
-Table lineitme {
+Table lineitem {
   id int [pk, increment]
   price numeric(19,4)
   quantity integer

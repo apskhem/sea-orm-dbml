@@ -12,7 +12,7 @@ pub trait ToColType {
 
 impl ToRustType for table::ColumnType {
   fn to_rust_type(&self) -> String {
-    match &self.type_name {
+    let str_type = match &self.type_name {
       table::ColumnTypeName::Enum(name) => format!("super::{}", name.to_pascal_case()),
       table::ColumnTypeName::Char => format!("String"),
       table::ColumnTypeName::VarChar => format!("String"),
@@ -32,22 +32,25 @@ impl ToRustType for table::ColumnType {
       table::ColumnTypeName::Json => format!("Json"),
       table::ColumnTypeName::Decimal => format!("Decimal"),
       _ => panic!("cannot_format_type_to_seaorm_type")
-    }
+    };
+
+    self.arrays.iter().fold(str_type, |acc, arr| {
+      format!("Vec<{}>", acc)
+    })
   }
 }
 
 impl ToColType for table::ColumnType {
   fn to_col_type(&self) -> Option<String> {
     let str_arg_vec: Vec<_> = self.args.iter().map(|arg| arg.to_string()).collect();
-    let str_arg = if str_arg_vec.len() == 0 {
-      format!("None")
-    } else if str_arg_vec.len() == 1 {
-      format!("Some({})", str_arg_vec.join(", "))
-    } else {
-      format!("Some(({}))", str_arg_vec.join(", "))
+
+    let str_arg = match str_arg_vec.len() {
+      0 => format!("None"),
+      1 => format!("Some({})", str_arg_vec.join(", ")),
+      _ => format!("Some(({}))", str_arg_vec.join(", "))
     };
 
-    match self.type_name {
+    let str_type = match self.type_name {
       table::ColumnTypeName::Char => Some(format!("Char({})", str_arg)),
       table::ColumnTypeName::VarChar => Some(format!("String({})", str_arg)),
       table::ColumnTypeName::SmallInt => Some(format!("SmallInteger")),
@@ -66,6 +69,18 @@ impl ToColType for table::ColumnType {
       table::ColumnTypeName::Json => Some(format!("Json")),
       table::ColumnTypeName::Decimal => Some(format!("Decimal({})", str_arg)),
       _ => None
+    };
+    
+    match str_type {
+      Some(s) => {
+        let r = self.arrays.iter().fold(s, |acc, arr| {
+          // FIXME: not sure
+          format!("Array<Arc<{}>>", acc)
+        });
+
+        Some(r)
+      },
+      None => None
     }
   }
 }
