@@ -51,13 +51,13 @@ impl Config {
   }
 
   pub fn transpile(&self) -> Result<()> {
-    let sem_ast = dbml_rs::parse_file(&self.in_path)?;
+    let sem_ast = dbml_rs::parse_file(&self.in_path).unwrap_or_else(|e| panic!("{}", e));
     
     let result = transpile(sem_ast, &self.target).unwrap_or_else(|e| panic!("{}", e));
 
     let out_path = match self.out_path.clone() {
       Some(out_path) => out_path,
-      _ => {
+      None => {
         env::var_os("OUT_DIR")
         .ok_or_else(|| {
           Error::new(ErrorKind::Other, "OUT_DIR environment variable is not set")
