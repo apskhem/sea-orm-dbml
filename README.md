@@ -1,7 +1,8 @@
-# DBML Entity
+# SeaORM DBML
 
 #### Database Markup Language (DBML) transpiler for SeaORM Entity.
 
+[![crate](https://img.shields.io/crates/v/sea-orm-dbml.svg)](https://crates.io/crates/sea-orm-dbml)
 ![MSRV](https://img.shields.io/badge/rustc-1.59+-ab6000.svg)
 ![MIT or Apache 2.0 licensed](https://img.shields.io/crates/l/sea-orm-dbml.svg)
 ![unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)
@@ -14,7 +15,7 @@ Read more: [Official docs](https://www.dbml.org/home/)
 
 This project aims to make use of DBML as a language for writing SeaORM entity.
 
-## The taste
+## Output
 
 Below is the example of transpiling DBML into SeaORM entity.
 
@@ -53,7 +54,19 @@ pub mod user {
 
 ## How to use it?
 
-TBA. Working in progress.
+```rust
+use std::io::Result;
+
+use sea_orm_dbml::*;
+
+fn main() -> Result<()> {
+  config("path/to/your.dbml", transpiler::Target::Postgres)
+    // default: ver_os("OUT_DIR")
+    .set_out_path("out/path/mod.rs")
+    .transpile()
+}
+
+```
 
 ## License
 

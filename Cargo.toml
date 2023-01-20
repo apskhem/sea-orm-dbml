@@ -1,18 +1,21 @@
 [package]
 name = "sea-orm-dbml"
-description = "Database Markup Language (DBML) transpiler for SeaORM entity."
+version = "0.1.0-beta.1"
+description = "DBML to SeaORM entity transpiler."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/apskhem/sea-orm-dbml"
 readme = "README.md"
 authors = ["Apisit Ritreungroj <cyber1.record@gmail.com>"]
 keywords = ["transpiler", "orm"]
 categories = ["database"]
-version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-dbml-rs = { git = "https://github.com/apskhem/dbml-rs", branch = "main" }
+dbml-rs = "0.1.0-beta.1"
 Inflector = "0.11"
 
 [dev-dependencies]
 sea-orm = { version = "0.10" }
+
+[features]
+default = []
