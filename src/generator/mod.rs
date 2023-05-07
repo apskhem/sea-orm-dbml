@@ -6,7 +6,7 @@ pub struct Codegen {
 impl Codegen {
   pub fn new() -> Self {
     let codegen = Self {
-      root_block: Block::root()
+      root_block: Block::root(),
     };
 
     codegen
@@ -56,7 +56,7 @@ pub struct Block {
   /// content before the block
   content_before_block: Option<String>,
   /// content inside the block
-  content: String
+  content: String,
 }
 
 impl Block {
@@ -64,7 +64,7 @@ impl Block {
     Self {
       level: 0,
       content_before_block: None,
-      content: String::new()
+      content: String::new(),
     }
   }
 
@@ -78,7 +78,7 @@ impl Block {
     Self {
       level,
       content_before_block: content,
-      content: String::new()
+      content: String::new(),
     }
   }
 
@@ -139,7 +139,11 @@ impl ToString for Block {
     let out = if self.level == 0 {
       format!("{}", self.content.clone())
     } else {
-      let block_indent = if self.level == 1 { String::new() } else { "\t".repeat(self.level - 1) };
+      let block_indent = if self.level == 1 {
+        String::new()
+      } else {
+        "\t".repeat(self.level - 1)
+      };
 
       let upper_block = if let Some(content_before_block) = self.content_before_block.clone() {
         format!("{}{} {}", block_indent, content_before_block, "{")
@@ -155,7 +159,7 @@ impl ToString for Block {
         format!("{}\n{}{}", upper_block, self.content.clone(), lower_block)
       }
     };
-    
+
     out
   }
 }

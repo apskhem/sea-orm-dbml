@@ -31,12 +31,13 @@ impl ToRustType for table::ColumnType {
       table::ColumnTypeName::Uuid => format!("Uuid"),
       table::ColumnTypeName::Json => format!("Json"),
       table::ColumnTypeName::Decimal => format!("Decimal"),
-      _ => panic!("cannot_format_type_to_seaorm_type")
+      _ => panic!("cannot_format_type_to_seaorm_type"),
     };
 
-    self.arrays.iter().fold(str_type, |acc, arr| {
-      format!("Vec<{}>", acc)
-    })
+    self
+      .arrays
+      .iter()
+      .fold(str_type, |acc, arr| format!("Vec<{}>", acc))
   }
 }
 
@@ -47,7 +48,7 @@ impl ToColType for table::ColumnType {
     let str_arg = match str_arg_vec.len() {
       0 => format!("None"),
       1 => format!("Some({})", str_arg_vec.join(", ")),
-      _ => format!("Some(({}))", str_arg_vec.join(", "))
+      _ => format!("Some(({}))", str_arg_vec.join(", ")),
     };
 
     let str_type = match self.type_name {
@@ -68,9 +69,9 @@ impl ToColType for table::ColumnType {
       table::ColumnTypeName::Uuid => Some(format!("Uuid")),
       table::ColumnTypeName::Json => Some(format!("Json")),
       table::ColumnTypeName::Decimal => Some(format!("Decimal({})", str_arg)),
-      _ => None
+      _ => None,
     };
-    
+
     match str_type {
       Some(s) => {
         let r = self.arrays.iter().fold(s, |acc, arr| {
@@ -79,8 +80,8 @@ impl ToColType for table::ColumnType {
         });
 
         Some(r)
-      },
-      None => None
+      }
+      None => None,
     }
   }
 }
