@@ -1,3 +1,7 @@
+Project testing {
+  database_type: 'PostgreSQL'
+}
+
 Table users {
   id int [primary key]
   full_name varchar

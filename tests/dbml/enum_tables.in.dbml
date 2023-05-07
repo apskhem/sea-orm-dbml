@@ -1,3 +1,7 @@
+Project testing {
+  database_type: 'PostgreSQL'
+}
+
 Enum job_status {
   created [note: "Job created and pending"]
   running [note: "Waiting for warehouse to process"]

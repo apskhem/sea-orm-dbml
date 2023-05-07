@@ -1,3 +1,7 @@
+Project testing {
+  database_type: 'PostgreSQL'
+}
+
 Enum "orders_status" {
   "created"
   "running"

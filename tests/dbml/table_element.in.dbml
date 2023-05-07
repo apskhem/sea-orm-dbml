@@ -1,3 +1,7 @@
+Project testing {
+  database_type: 'PostgreSQL'
+}
+
 Table users [note: 'note in table settings'] {
   id int [pk]
   name varchar [pk]
